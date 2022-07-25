@@ -10,7 +10,7 @@ function App() {
           Edit <code>src/App.js</code> and save to reload.
         </p>
 	<p>
-		Testing another thing with automatic updates via github webhook
+		Testing last thing with automatic updates via github webhook
 	</p>
         <a
           className="App-link"
