@@ -1,38 +1,81 @@
 .App {
-	text-align: center;
+  text-align: center;
+  min-height: 100vh;
+  display: flex;
+  font-size: 24px;
 }
 
-.App-logo {
-	height: 40vmin;
-	pointer-events: none;
+.folder-title {
+  cursor: pointer;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-	.App-logo {
-		animation: App-logo-spin infinite 20s linear;
-	}
+/*.CodeMirror-scroll {
+  height: auto;
+  overflow-y: hidden;
+  overflow-x: auto;
+}*/
+
+/*.filemanager {
+	position:  relative;
 }
 
-.App-header {
-	background-color: #282c34;
-	min-height: 100vh;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	font-size: calc(10px + 2vmin);
-	color: white;
+.filemanager::after {
+    pointer-events: none;
+    content: "↓";
+    font-size: 14px;
+    position: absolute;
+    height: 22px;
+    width: 22px;
+    text-align: center;
+    bottom: 2px;
+    right: -2px;
+    z-index: 2;
+    background-color: #efefef;
+}*/
+
+/*html {
+	width: 100%;
+	hegiht: 100%;
+}*/
+
+/*body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #FFCC00;
+}*/
+
+/*.codeArea {
+	flex:1 1 auto;
+	margin-top:0;
+	height:100%;
+	position:relative;
 }
 
-.App-link {
-	color: #61dafb;
+.CodeMirror {
+	position:absolute;
+	top:0;
+	bottom:0;
+	left:0;
+	right:0;
+	height:100%;
+}*/
+
+#codemirror-wrapper {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  height: 100%;
 }
 
-@keyframes App-logo-spin {
-	from {
-		transform: rotate(0deg);
-	}
-	to {
-		transform: rotate(360deg);
-	}
+.frame-horiz {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+}
+
+.frame-vert {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
