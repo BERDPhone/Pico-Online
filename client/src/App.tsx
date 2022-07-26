@@ -96,7 +96,7 @@ function App() {
 			<div className="flex h-full overflow-hidden">
 
 				<Resizable
-					className="bg-gray-800"
+					className="overflow-scroll bg-gray-800"
 					// style={style}
 					defaultSize={{
 						width: '200px',

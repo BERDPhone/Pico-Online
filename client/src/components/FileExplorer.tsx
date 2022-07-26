@@ -1,23 +1,23 @@
 import { useState } from "react";
-import { FaFolder } from "react-icons/fa";
+import { FaFolder, FaFileCode } from "react-icons/fa";
 
-const FileExplorer = ({ files }: any) => {
+const FileExplorer = ({ files, margin}: any) => {
 	const [isExpanded, toggleExpanded] = useState(false);
 
 	if (files.type === 'folder') {
 		return (
-			<div>
+			<div className={margin}>
 				{/*<FaFolder />*/}
-				<h2 className="folder-title text-white pl-2 pr-3 whitespace-nowrap" onClick={() => toggleExpanded(!isExpanded)}>{files.name}</h2><br />
+				<span className="folder-title text-white pl-2 pr-3 mt-5 whitespace-nowrap" onClick={() => toggleExpanded(!isExpanded)}><FaFolder className="inline" /> - {files.name}</span><br />
 				{
-					isExpanded && files.items.map((item: any) => <FileExplorer files={item} />)
+					isExpanded && files.items.map((item: any) => <FileExplorer margin="ml-5" files={item} />)
 				}
 			</div>
 		)
 	}
 	return (
 		<>
-			<h3 className="text-slate-300 pl-5 pr-3 whitespace-nowrap">{files.name}</h3><br />
+			<span className={`text-slate-300 pl-5 pr-3 whitespace-nowrap ${margin}`}><FaFileCode className="inline" /> - {files.name}</span><br />
 		</>
 	)
 }
