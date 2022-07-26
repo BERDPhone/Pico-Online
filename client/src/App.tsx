@@ -93,7 +93,7 @@ function App() {
 	return (
 		<div className="flex flex-col">
 			<Navbar />
-			<div className="flex h-full overflow-scroll">
+			<div className="flex h-full overflow-hidden">
 
 				<Resizable
 					className="bg-gray-800"
