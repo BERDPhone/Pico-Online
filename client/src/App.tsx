@@ -93,7 +93,7 @@ function App() {
 	return (
 		<div className="flex flex-col">
 			<Navbar />
-			<div className="flex h-full">
+			<div className="flex h-full overflow-scroll">
 
 				<Resizable
 					className="bg-gray-800"
@@ -109,7 +109,7 @@ function App() {
 				</Resizable>
 
 				<CodeMirror
-					className="flex-1"
+					className="flex-1 overflow-scroll"
 					value="console.log('hello world!');"
 					theme={sublime}
 					height="100%"
@@ -117,7 +117,7 @@ function App() {
 				/>
 			</div>
 			<Resizable
-				className="bg-current flex-none"
+				className="bg-current "
 				// style={style}
 				defaultSize={{
 					width: '100%',
@@ -127,6 +127,7 @@ function App() {
 				minWidth="1"
 			>
 					<ReactTerminal
+						className="flex-none"
 						commands={commands}
 						showControlBar={false}
 						theme="material-ocean"
