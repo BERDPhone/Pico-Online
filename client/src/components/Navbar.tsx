@@ -1,15 +1,23 @@
 import React from "react";
 import { FaBars } from "react-icons/fa";
+import LoadButton from "./LoadButton";
 
-function Navbar({ fixed }: any) {
+function Navbar({ pullStart, pullFinish }: any) {
 	const [navbarOpen, setNavbarOpen] = React.useState(false);
+	const [loading, setLoading] = React.useState(false);
 
 	const pull = () => {
-		await fetch('http://localhost:9000/api/message')
+		
+		setLoading(true);
+
+		fetch('http://localhost:9000/api/pull', {
+			method: 'PATCH'
+		})
 			.then((response) => response.json())
 			.then((data) => {
-				console.log(data)
-				final = data.message;
+				if (data.status === 200) {
+					setLoading(false);
+				}
 			});
 	}
 	return (
@@ -41,12 +49,13 @@ function Navbar({ fixed }: any) {
 						<ul className="flex flex-col lg:flex-row list-none lg:ml-auto">
 							<li className="nav-item">
 								<div className="px-3 py-2 flex items-center text-xs uppercase font-bold leading-snug text-white hover:opacity-75">
-									<button 
+									<LoadButton 
 										className="ml-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded uppercase"
-										onClick={() => setNavbarOpen(!navbarOpen)}
+										onClick={() => pull()}
+										loading={loading}
 									>
 										Pull
-									</button>
+									</LoadButton>
 								</div>
 							</li>
 							<li className="nav-item">
