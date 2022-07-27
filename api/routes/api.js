@@ -110,6 +110,25 @@ router.get('/files/structure', (req, res, next) => {
 				"status": 500
 			});
 		} else {
+			const orderChildren = obj => {
+				obj.children.sort((a, b) => b.type.localeCompare(a.type));
+				if (obj.children.some(o => o.children.length)) {
+					obj.children.forEach(child => orderChildren(child));
+				}
+				return obj;
+			};
+
+			function sortArray(array) {
+				array.sort((a, b) => b.type.localeCompare(a.type));
+				array.forEach(a => {
+					if (a.children && a.children.length > 0)
+						sortArray(a.children)
+				})
+				return array;
+			}
+
+			response = sortArray(response);
+
 			res.json({
 				"name": "BDOS",
 				"type": "folder",
