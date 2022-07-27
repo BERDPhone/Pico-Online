@@ -8,7 +8,7 @@ const FileExplorer = ({ files, margin}: any) => {
 		return (
 			<div className={margin}>
 				{/*<FaFolder />*/}
-				<span className="folder-title text-white pl-2 pr-3 mt-5 whitespace-nowrap" onClick={() => toggleExpanded(!isExpanded)}><FaFolder className="inline" /> - {files.name}</span><br />
+				<span className="folder-title text-white pl-2 pr-3 mt-5 whitespace-nowrap" onClick={() => toggleExpanded(!isExpanded)}><FaFolder className="inline" /> {files.name}</span><br />
 				{
 					isExpanded && files.items.map((item: any) => <FileExplorer margin="ml-5" files={item} />)
 				}
@@ -17,7 +17,7 @@ const FileExplorer = ({ files, margin}: any) => {
 	}
 	return (
 		<>
-			<span className={`text-slate-300 pl-5 pr-3 whitespace-nowrap ${margin}`}><FaFileCode className="inline" /> - {files.name}</span><br />
+			<span className={`text-slate-300 pl-5 pr-3 whitespace-nowrap ${margin}`}><FaFileCode className="inline" /> {files.name}</span><br />
 		</>
 	)
 }
