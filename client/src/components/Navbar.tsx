@@ -3,6 +3,15 @@ import { FaBars } from "react-icons/fa";
 
 function Navbar({ fixed }: any) {
 	const [navbarOpen, setNavbarOpen] = React.useState(false);
+
+	const pull = () => {
+		await fetch('http://localhost:9000/api/message')
+			.then((response) => response.json())
+			.then((data) => {
+				console.log(data)
+				final = data.message;
+			});
+	}
 	return (
 		<>
 			<nav className="relative flex flex-wrap items-center justify-between px-2 py-3 bg-slate-900">
@@ -32,7 +41,10 @@ function Navbar({ fixed }: any) {
 						<ul className="flex flex-col lg:flex-row list-none lg:ml-auto">
 							<li className="nav-item">
 								<div className="px-3 py-2 flex items-center text-xs uppercase font-bold leading-snug text-white hover:opacity-75">
-									<button className="ml-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded uppercase">
+									<button 
+										className="ml-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded uppercase"
+										onClick={() => setNavbarOpen(!navbarOpen)}
+									>
 										Pull
 									</button>
 								</div>

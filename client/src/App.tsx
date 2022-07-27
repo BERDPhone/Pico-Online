@@ -87,12 +87,31 @@ const files = {
 function App() {
 	const commands = {
 		whoami: "BjornTheProgrammer",
-		cd: (directory: string) => `changed path to ${directory}`
+		help: "Sucks to be you",
+		cd: (directory: string) => {
+				return `changed path to ${directory}`
+			},
+		fetch: async () => {
+				console.log("Being fetched")
+				let final = "";
+
+				let headers = new Headers();
+
+				await fetch('http://localhost:9000/api/message')
+					.then((response) => response.json())
+					.then((data) => {
+						console.log(data)
+						final = data.message;
+					});
+
+				return final;
+			}
 	};
 
 	return (
 		<div className="flex flex-col">
 			<Navbar />
+
 			<div className="flex h-full overflow-hidden">
 
 				<Resizable
@@ -116,6 +135,8 @@ function App() {
 					extensions={[langs.c()]}
 				/>
 			</div>
+
+
 			<Resizable
 				className="bg-current "
 				// style={style}
