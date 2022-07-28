@@ -25,7 +25,6 @@ const FileExplorer = ({ files, margin, loading, increaseKey, }: any) => {
 					<span className="folder-title text-white pl-2 pr-3 mt-5 whitespace-nowrap" onClick={() => toggleExpanded(!isExpanded)}><FaFolder className="inline" /> {files.name}</span><br />
 					{
 						isExpanded && files.children.map((item: any) => {
-							console.log("item: ", item);
 							return (
 								<FileExplorer margin="ml-5" files={item} key={key += 1} increaseKey={increaseKey} />
 							);

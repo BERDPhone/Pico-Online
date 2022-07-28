@@ -10,7 +10,7 @@ function Navbar({ pullStart, pullFinish, handlePullStart, handlePullStop }: any)
 		handlePullStart()
 		setLoading(true);
 
-		fetch('http://localhost:9000/api/pull', {
+		fetch(`${process.env.REACT_APP_SITE_URL}/pull`, {
 			method: 'PATCH'
 		})
 			.then((response) => response.json())

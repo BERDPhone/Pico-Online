@@ -26,10 +26,10 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "start": "REACT_APP_SITE_URL=\"$(python3 -c \"import sys, json; f = open('../config.json'); print(json.load(f)['apiUrl'])\")\" react-scripts start",
+    "build": "REACT_APP_SITE_URL=\"$(python3 -c \"import sys, json; f = open('../config.json'); print(json.load(f)['apiUrl'])\")\" react-scripts build",
+    "test": "REACT_APP_SITE_URL=\"$(python3 -c \"import sys, json; f = open('../config.json'); print(json.load(f)['apiUrl'])\")\" react-scripts test",
+    "eject": "REACT_APP_SITE_URL=\"$(python3 -c \"import sys, json; f = open('../config.json'); print(json.load(f)['apiUrl'])\")\" react-scripts eject"
   },
   "eslintConfig": {
     "extends": [

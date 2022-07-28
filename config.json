@@ -1,4 +1,5 @@
 {
 	"gitRepository": "https://github.com/BjornTheProgrammer/BDOS.git",
-	"gitBaseDir": "BDOS"
+	"gitBaseDir": "BDOS",
+	"apiUrl": "http://98.165.66.40:8000/api"
 }

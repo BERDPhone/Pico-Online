@@ -45,7 +45,7 @@ router.patch('/pull', function(req, res, next) {
 			.then(() => {
 				res.json({
 					"status": 200,
-					"message": "Successfully pulled BDOS from github",
+					"message": "Successfully pulled " + config.gitBaseDir + " from github",
 				});
 			}).catch((err) => {
 				throw err;
@@ -131,7 +131,7 @@ router.get('/files/structure', (req, res, next) => {
 				response = sortArray(response);
 
 				res.json({
-					"name": "BDOS",
+					"name": config.gitBaseDir,
 					"type": "folder",
 					"children": response,
 					"status": 200,
@@ -139,7 +139,7 @@ router.get('/files/structure', (req, res, next) => {
 			}
 		} catch (erorr) {
 			res.json({
-				"name": "BDOS",
+				"name": config.gitBaseDir,
 				"type": "folder",
 				"children": [],
 				"status": 500,

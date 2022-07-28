@@ -30,7 +30,7 @@ class Editor extends Component<props> {
 	
 
 	componentDidMount() {
-		fetch('http://localhost:9000/api/files/structure', {
+		fetch(`${process.env.REACT_APP_SITE_URL}/files/structure`, {
 			method: 'GET'
 		})
 			.then((response) => response.json())

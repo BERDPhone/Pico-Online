@@ -32,8 +32,7 @@ class App extends Component {
 					let final = "";
 
 					let headers = new Headers();
-
-					await fetch('http://localhost:9000/api/message')
+					await fetch(`${process.env.REACT_APP_SITE_URL}/message`)
 						.then((response) => response.json())
 						.then((data) => {
 							console.log(data)
