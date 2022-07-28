@@ -2,12 +2,12 @@ import React from "react";
 import { FaBars } from "react-icons/fa";
 import LoadButton from "./LoadButton";
 
-function Navbar({ pullStart, pullFinish }: any) {
+function Navbar({ pullStart, pullFinish, handlePullStart, handlePullStop }: any) {
 	const [navbarOpen, setNavbarOpen] = React.useState(false);
 	const [loading, setLoading] = React.useState(false);
 
 	const pull = () => {
-		
+		handlePullStart()
 		setLoading(true);
 
 		fetch('http://localhost:9000/api/pull', {
@@ -16,6 +16,7 @@ function Navbar({ pullStart, pullFinish }: any) {
 			.then((response) => response.json())
 			.then((data) => {
 				if (data.status === 200) {
+					handlePullStop();
 					setLoading(false);
 				}
 			});

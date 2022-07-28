@@ -23,3 +23,7 @@ html, body, #root, #root>div {
 html {
 	overflow: hidden;
 }
+
+.folder-title {
+  cursor: pointer;
+}

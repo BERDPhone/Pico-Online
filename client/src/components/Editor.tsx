@@ -12,10 +12,21 @@ import { tags as t } from '@lezer/highlight';
 
 import FileExplorer from './FileExplorer'
 
-class Editor extends Component {
+type props = {
+  // using `interface` is also ok
+  pulling: boolean;
+};
+
+let fileExplorerKey = 0;
+
+class Editor extends Component<props> {
 	state = {
 		files: {}
 	};
+
+	increaseFileExplorerKey = () => {
+		return fileExplorerKey +=1;
+	}
 	
 
 	componentDidMount() {
@@ -113,6 +124,8 @@ class Editor extends Component {
 			],
 		});
 
+		this.increaseFileExplorerKey();
+
 		return (
 			<div className="flex h-full overflow-hidden">
 
@@ -125,18 +138,46 @@ class Editor extends Component {
 					}}
 					maxWidth="100%"
 					minWidth="1"
+
+					enable={ { top:false, right:true, bottom:false, left:false, topRight:false, bottomRight:false, bottomLeft:false, topLeft:false } }
+					// minHeight="100%"
 				>
-					{(Object.keys(this.state.files).length === 0) ? <FileExplorer loading={true} /> : <FileExplorer files={this.state.files} loading={false} /> }
+					{
+						((Object.keys(this.state.files).length === 0) || this.props.pulling) ? 
+							<FileExplorer 
+								loading={true} 
+								key={fileExplorerKey} 
+								increaseKey={this.increaseFileExplorerKey}
+							/> : 
+
+							<FileExplorer 
+								files={this.state.files} 
+								loading={false} 
+								key={fileExplorerKey} 
+								increaseKey={this.increaseFileExplorerKey}
+							/> 
+					}
 				</Resizable>
 
-				<CodeMirror
-					className="flex-1 overflow-scroll"
-					value="console.log('hello world!');"
-					theme={sublimeLike}
-					height="100%"
-					basicSetup={false}
-					extensions={[breakpointGutter, basicSetup(), langs.c()]}
-				/>
+				{
+					this.props.pulling ?
+						<CodeMirror
+							className="backdrop-blur-sm bg-white/30 flex-1 overflow-scroll"
+							value="console.log('hello world!');"
+							theme={sublimeLike}
+							height="100%"
+							basicSetup={false}
+							extensions={[EditorView.contentAttributes.of({ contenteditable: 'false' }), breakpointGutter, basicSetup(), langs.c()]}
+						/>
+					: <CodeMirror
+							className="flex-1 overflow-scroll"
+							value="console.log('hello world!');"
+							theme={sublimeLike}
+							height="100%"
+							basicSetup={false}
+							extensions={[breakpointGutter, basicSetup(), langs.c()]}
+						/>
+				}
 			</div>
 		);
 	}

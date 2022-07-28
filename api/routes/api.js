@@ -26,7 +26,6 @@ router.post('/message', function(req, res, next) {
 router.patch('/pull', function(req, res, next) {
 	try {
 		
-
 		if (fs.existsSync(gitDir)) {
 			fs.rmSync(gitDir, { recursive: true });
 		}
@@ -102,38 +101,48 @@ router.get('/files/structure', (req, res, next) => {
 	};
 
 	diretoryTreeToObj(gitDir, function(err, response) {
-		if(err) {
-			console.error(err);
+		try {
+			if(err) {
+				console.error(err);
 
-			res.json({
-				"error": error,
-				"status": 500
-			});
-		} else {
-			const orderChildren = obj => {
-				obj.children.sort((a, b) => b.type.localeCompare(a.type));
-				if (obj.children.some(o => o.children.length)) {
-					obj.children.forEach(child => orderChildren(child));
+				res.json({
+					"error": error,
+					"status": 500
+				});
+			} else {
+				// const orderChildren = obj => {
+				// 	obj.children.sort((a, b) => b.type.localeCompare(a.type));
+				// 	if (obj.children.some(o => o.children.length)) {
+				// 		obj.children.forEach(child => orderChildren(child));
+				// 	}
+				// 	return obj;
+				// };
+
+				function sortArray(array) {
+					array.sort((a, b) => a.name.localeCompare(b.name));
+					array.sort((a, b) => b.type.localeCompare(a.type));
+					array.forEach(a => {
+						if (a.children && a.children.length > 0)
+							sortArray(a.children)
+					})
+					return array;
 				}
-				return obj;
-			};
 
-			function sortArray(array) {
-				array.sort((a, b) => b.type.localeCompare(a.type));
-				array.forEach(a => {
-					if (a.children && a.children.length > 0)
-						sortArray(a.children)
-				})
-				return array;
+				response = sortArray(response);
+
+				res.json({
+					"name": "BDOS",
+					"type": "folder",
+					"children": response,
+					"status": 200,
+				});
 			}
-
-			response = sortArray(response);
-
+		} catch (erorr) {
 			res.json({
 				"name": "BDOS",
 				"type": "folder",
-				"children": response,
-				"status": 200,
+				"children": [],
+				"status": 500,
 			});
 		}
 	});
