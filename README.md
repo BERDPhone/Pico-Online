@@ -1,0 +1,1 @@
+PICO_BOARD=pico_w cmake .. && make picow_blink && openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program pico_w/blink/picow_blink.elf verify reset exit"
