@@ -1,29 +1,27 @@
-var express = require('express');
-var router = express.Router();
-const simpleGit = require('simple-git');
-const fs = require('fs');
+import { Request, Response, NextFunction } from 'express';
+import * as express from 'express';
+
+import { simpleGit, SimpleGit, CleanOptions } from 'simple-git';
+import * as fs from 'fs';
 const path = require('path');
 const config = require('../../config.json')
-const gitDir = `${process.cwd()}/${config.gitBaseDir}`;
+const gitDir: string = `${process.cwd()}/${config.gitBaseDir}`;
 
-/* 
-GET norsemarketing.com/api/message => {"message": "Hello World!"}
-*/
-router.get('/message', (req, res, next) => {
-	console.log(req);
+const router = express.Router();
+
+router.get('/message', (req: Request, res: Response, next: NextFunction) => {
 	res.json({
 		"message": "GET Request recieved!",
 	});
 });
 
-router.post('/message', function(req, res, next) {
-	console.log("body: ", req.body);
+router.post('/message', (req: Request, res: Response, next: NextFunction) => {
 	res.json({
 		"message": "Recieved",
 	});
 });
 
-router.patch('/pull', function(req, res, next) {
+router.patch('/pull', function(req: Request, res: Response, next: NextFunction) {
 	try {
 		
 		if (fs.existsSync(gitDir)) {
@@ -36,7 +34,7 @@ router.patch('/pull', function(req, res, next) {
 			baseDir: gitDir,
 		};
 
-		simpleGit(options).clean(simpleGit.CleanOptions.FORCE);
+		simpleGit(options).clean(CleanOptions.FORCE);
 
 		const remote = config.gitRepository;
 
@@ -60,9 +58,9 @@ router.patch('/pull', function(req, res, next) {
 	}
 });
 
-router.get('/files/structure', (req, res, next) => {
-	let diretoryTreeToObj = function(dir, done) {
-		let results = [];
+router.get('/files/structure', (req: Request, res: Response, next: NextFunction) => {
+	let diretoryTreeToObj = function(dir: string, done: Function) {
+		let results: File[] = [];
 
 		fs.readdir(dir, function(err, list) {
 			if (err)
@@ -77,7 +75,7 @@ router.get('/files/structure', (req, res, next) => {
 				file = path.resolve(dir, file);
 				fs.stat(file, function(err, stat) {
 					if (stat && stat.isDirectory()) {
-						diretoryTreeToObj(file, function(err, res) {
+						diretoryTreeToObj(file, function(err: any, res: File[]) {
 							results.push({
 								name: path.basename(file),
 								type: 'folder',
@@ -100,13 +98,13 @@ router.get('/files/structure', (req, res, next) => {
 		});
 	};
 
-	diretoryTreeToObj(gitDir, function(err, response) {
+	diretoryTreeToObj(gitDir, function(err: any, response: File[]) {
 		try {
 			if(err) {
 				console.error(err);
 
 				res.json({
-					"error": error,
+					"error": err,
 					"status": 500
 				});
 			} else {
@@ -118,7 +116,7 @@ router.get('/files/structure', (req, res, next) => {
 				// 	return obj;
 				// };
 
-				function sortArray(array) {
+				const sortArray = (array: File[]) => {
 					array.sort((a, b) => a.name.localeCompare(b.name));
 					array.sort((a, b) => b.type.localeCompare(a.type));
 					array.forEach(a => {
@@ -146,13 +144,21 @@ router.get('/files/structure', (req, res, next) => {
 			});
 		}
 	});
-
-
 	
 });
 
 
+router.post('/build', (req: Request, res: Response, next: NextFunction) => {
+	res.json({
+		"message": "Recieved",
+	});
+});
 
-router.get
 
-module.exports = router;
+interface File {
+	name: string; 
+	type: string; 
+	children?: File[];
+}
+
+export default router;
