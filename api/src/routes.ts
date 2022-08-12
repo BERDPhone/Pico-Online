@@ -154,6 +154,25 @@ router.post('/build', (req: Request, res: Response, next: NextFunction) => {
 	});
 });
 
+router.get('/branch', (req: Request, res: Response, next: NextFunction) => {
+	simpleGit(gitDir)
+		.branch()
+		.then((branches) => {
+			// remotes/origin/
+			console.log("branches: ", branches.all)
+			let allBranches: string[] = [];
+			branches.all.forEach(branch => {
+				if (branch.includes("remotes/origin/")) {
+					allBranches.push(branch.replace("remotes/origin/", ""));
+				}
+			})
+
+			res.json(allBranches.sort());
+		}).catch((err) => {
+			throw err;
+		});
+});
+
 
 interface File {
 	name: string; 

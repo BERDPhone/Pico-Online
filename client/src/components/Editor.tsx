@@ -3,24 +3,22 @@ import { Resizable } from 're-resizable';
 
 import CodeMirror from '@uiw/react-codemirror';
 import { langs } from '@uiw/codemirror-extensions-langs';
-import { sublime } from '@uiw/codemirror-theme-sublime';
 import {EditorView, gutter, GutterMarker} from "@codemirror/view"
 import {StateField, StateEffect, RangeSet} from "@codemirror/state"
-import { basicSetup, minimalSetup } from '@uiw/codemirror-extensions-basic-setup';
+import { basicSetup } from '@uiw/codemirror-extensions-basic-setup';
 import { createTheme } from '@uiw/codemirror-themes'
 import { tags as t } from '@lezer/highlight';
 
 import FileExplorer, {FileStruct} from './FileExplorer'
 
-type props = {
-  // using `interface` is also ok
-  pulling: boolean;
-};
+import { PullContext } from "../context/PullContext";
 
 let fileExplorerKey = 0;
 
-class Editor extends Component<props> {
+class Editor extends Component {
 	fileData: FileStruct = { name: "BDOS", type: "folder" };
+
+	static contextType = PullContext;
 
 	state = {
 		files: this.fileData
@@ -32,6 +30,7 @@ class Editor extends Component<props> {
 	
 
 	componentDidMount() {
+
 		fetch(`${process.env.REACT_APP_SITE_URL}/files/structure`, {
 			method: 'GET'
 		})
@@ -60,7 +59,7 @@ class Editor extends Component<props> {
 						if (e.value.on)
 							set = set.update({add: [breakpointMarker.range(e.value.pos)]})
 						else
-							set = set.update({filter: from => from != e.value.pos})
+							set = set.update({filter: from => from !== e.value.pos})
 					}
 				}
 				return set
@@ -147,7 +146,7 @@ class Editor extends Component<props> {
 					// minHeight="100%"
 				>
 					{
-						((Object.keys(this.state.files).length === 0) || this.props.pulling) ? 
+						((Object.keys(this.state.files).length === 0) || this.context) ? 
 							<FileExplorer 
 								loading={true} 
 								key={fileExplorerKey} 
@@ -164,7 +163,7 @@ class Editor extends Component<props> {
 				</Resizable>
 
 				{
-					this.props.pulling ?
+					this.context ?
 						<CodeMirror
 							className="backdrop-blur-sm bg-white/30 flex-1 overflow-scroll"
 							value="console.log('hello world!');"
