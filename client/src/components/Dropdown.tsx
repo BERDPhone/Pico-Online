@@ -23,7 +23,7 @@ export default function Dropdown({ branches }: props) {
 			m-0
 			focus:text-white-800 focus:bg-pink-300 focus:border-blue-600 focus:outline-none" aria-label="Default select example">
 				{ branches.map(branch => {
-					return (<option selected>{branch}</option>)
+					return (<option key={branch}>{branch}</option>)
 				}) }
 				{/* <option value="1">Process-Status-Management</option>
 				<option value="2">Two</option>

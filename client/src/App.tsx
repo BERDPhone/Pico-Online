@@ -20,7 +20,6 @@ class App extends Component {
 				return `changed path to ${directory}`
 			},
 			fetch: async () => {
-				console.log("Being fetched")
 				let final = "";
 
 				await fetch(`${process.env.REACT_APP_SITE_URL}/message`)

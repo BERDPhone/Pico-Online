@@ -22,6 +22,16 @@ class Navbar extends Component<props, state> {
 	static contextType = PullContext;	
 	// static setPulling = React.useContext(PullDispatchContext);
 
+	componentDidMount() {
+		fetch(`${process.env.REACT_APP_SITE_URL}/branch`, {
+			method: 'GET'
+		})
+			.then((response) => response.json())
+			.then((data) => {
+				this.setState({ branches: data });
+			});
+	}
+
 	render() {
 
 		const pull = (callback: Function) => {
@@ -72,7 +82,7 @@ class Navbar extends Component<props, state> {
 						>
 							<ul className="flex flex-col lg:flex-row list-none lg:ml-auto">
 								<li className="nav-item">
-									<Dropdown branches={ this.state.branches } />
+									<Dropdown branches={ this.state.branches } key="1" />
 								</li>
 								<li className="nav-item">
 									<div className="px-3 py-2 flex items-center text-xs uppercase font-bold leading-snug text-white hover:opacity-75">

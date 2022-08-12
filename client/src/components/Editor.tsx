@@ -39,8 +39,6 @@ class Editor extends Component {
 				if (data.status === 200) {
 					this.setState({files: data});
 				}
-
-				console.log(data);
 			});
 	}
 
