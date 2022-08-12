@@ -1,6 +1,12 @@
 import React from "react";
 
-function LoadButton({ loading, spinnerClasses, ...other }: any) {
+type props = {
+	loading: boolean,
+	spinnerClasses?: string,
+	[other:string]: any;
+}
+
+function LoadButton({ loading, spinnerClasses, ...other }: props) {
 	if (loading === true) {
 		return (
 			<div role="status">

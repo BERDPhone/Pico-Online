@@ -27,3 +27,11 @@ html {
 .folder-title {
   cursor: pointer;
 }
+
+.form-select {
+  -moz-padding-start: calc(.75rem - 3px);
+  padding-right: 30px;
+  background-image: url("../public/download.svg");
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+}

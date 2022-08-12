@@ -1,7 +1,21 @@
 import { useState } from "react";
 import { FaFolder, FaFileCode } from "react-icons/fa";
 
-const FileExplorer = ({ files, margin, loading, increaseKey, }: any) => {
+type props = {
+	files?: FileStruct,
+	margin?: string,
+	loading?: boolean,
+	increaseKey: () => number,
+}
+
+export interface FileStruct {
+	name: string, 
+	type: string,
+	status?: number,
+	children?: FileStruct[],
+}
+
+const FileExplorer = ({ files, margin, loading, increaseKey }: props) => {
 	const [isExpanded, toggleExpanded] = useState(false);
 
 	let key = increaseKey();
@@ -18,7 +32,7 @@ const FileExplorer = ({ files, margin, loading, increaseKey, }: any) => {
 		)
 		
 	} else {
-		if (files.type === 'folder') {
+		if (files?.type === 'folder' && files.children) {
 			return (
 				<div className={margin}>
 					{/*<FaFolder />*/}
@@ -35,7 +49,7 @@ const FileExplorer = ({ files, margin, loading, increaseKey, }: any) => {
 		}
 		return (
 			<>
-				<span className={`text-slate-300 pl-2 pr-3 whitespace-nowrap ${margin}`}><FaFileCode className="inline" /> {files.name}</span><br />
+				<span className={`text-slate-300 pl-2 pr-3 whitespace-nowrap ${margin}`}><FaFileCode className="inline" /> {files?.name}</span><br />
 			</>
 		)
 	}

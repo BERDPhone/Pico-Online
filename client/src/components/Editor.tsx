@@ -10,7 +10,7 @@ import { basicSetup, minimalSetup } from '@uiw/codemirror-extensions-basic-setup
 import { createTheme } from '@uiw/codemirror-themes'
 import { tags as t } from '@lezer/highlight';
 
-import FileExplorer from './FileExplorer'
+import FileExplorer, {FileStruct} from './FileExplorer'
 
 type props = {
   // using `interface` is also ok
@@ -20,8 +20,10 @@ type props = {
 let fileExplorerKey = 0;
 
 class Editor extends Component<props> {
+	fileData: FileStruct = { name: "BDOS", type: "folder" };
+
 	state = {
-		files: {}
+		files: this.fileData
 	};
 
 	increaseFileExplorerKey = () => {
@@ -34,10 +36,12 @@ class Editor extends Component<props> {
 			method: 'GET'
 		})
 			.then((response) => response.json())
-			.then((data) => {
+			.then((data: FileStruct) => {
 				if (data.status === 200) {
 					this.setState({files: data});
 				}
+
+				console.log(data);
 			});
 	}
 

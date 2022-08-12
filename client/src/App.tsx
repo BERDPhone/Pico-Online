@@ -5,6 +5,8 @@ import { ReactTerminal } from "react-terminal";
 import Navbar from './components/Navbar'
 import Editor from './components/Editor'
 
+import "./App.css";
+
 let NavbarKey = 0;
 class App extends Component {
 
@@ -23,24 +25,28 @@ class App extends Component {
 	render() {
 		const commands = {
 			whoami: "BjornTheProgrammer",
+			clear: "Nope, Sucks to be you",
 			help: "Sucks to be you",
 			cd: (directory: string) => {
-					return `changed path to ${directory}`
-				},
+				return `changed path to ${directory}`
+			},
 			fetch: async () => {
-					console.log("Being fetched")
-					let final = "";
+				console.log("Being fetched")
+				let final = "";
 
-					let headers = new Headers();
-					await fetch(`${process.env.REACT_APP_SITE_URL}/message`)
-						.then((response) => response.json())
-						.then((data) => {
-							console.log(data)
-							final = data.message;
-						});
+				let headers = new Headers();
+				await fetch(`${process.env.REACT_APP_SITE_URL}/message`)
+					.then((response) => response.json())
+					.then((data) => {
+						console.log(data)
+						final = data.message;
+					});
 
-					return final;
-				}
+				return final;
+			},
+			branch: async (name: string) => {
+				return `changing branch to ${name}`;
+			}
 		};
 
 		return (

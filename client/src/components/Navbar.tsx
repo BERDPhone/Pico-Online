@@ -1,8 +1,14 @@
+import Dropdown from "./Dropdown";
 import React from "react";
 import { FaBars } from "react-icons/fa";
 import LoadButton from "./LoadButton";
 
-function Navbar({ pullStart, pullFinish, handlePullStart, handlePullStop }: any) {
+type props = { 
+	handlePullStart: () => void, 
+	handlePullStop: () => void
+}
+
+function Navbar({ handlePullStart, handlePullStop }: props) {
 	const [navbarOpen, setNavbarOpen] = React.useState(false);
 	const [loading, setLoading] = React.useState(false);
 
@@ -48,6 +54,9 @@ function Navbar({ pullStart, pullFinish, handlePullStart, handlePullStop }: any)
 						id="example-navbar-danger"
 					>
 						<ul className="flex flex-col lg:flex-row list-none lg:ml-auto">
+							<li className="nav-item">
+								<Dropdown />
+							</li>
 							<li className="nav-item">
 								<div className="px-3 py-2 flex items-center text-xs uppercase font-bold leading-snug text-white hover:opacity-75">
 									<LoadButton 
