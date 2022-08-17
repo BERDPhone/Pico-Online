@@ -8,6 +8,7 @@ type state = {
 	navbarOpen: boolean,
 	branchLoading: boolean,
 	branches: string[],
+	codeBuilding: boolean,
 };
 
 type props = {};
@@ -17,6 +18,7 @@ class Navbar extends Component<props, state> {
 		navbarOpen: false,
 		branchLoading: true,
 		branches: ["main"],
+		codeBuilding: false,
 	}
 
 	static contextType = PullContext;	
@@ -33,6 +35,21 @@ class Navbar extends Component<props, state> {
 	}
 
 	render() {
+
+		const buildCode = () => {
+			this.setState({ codeBuilding: true });
+			fetch(`${process.env.REACT_APP_SITE_URL}/build`, {
+				method: 'POST'
+			})
+				.then((response) => response.json())
+				.then((data) => {
+					console.log(data);
+					this.setState({ codeBuilding: false });
+				})
+				.catch(() => {
+					this.setState({ codeBuilding: false });	
+				});
+		}
 
 		const pull = (callback: Function) => {
 			callback(true);
@@ -109,9 +126,13 @@ class Navbar extends Component<props, state> {
 								</li>
 								<li className="nav-item">
 									<div className="px-3 py-2 flex items-center text-xs uppercase font-bold leading-snug text-white hover:opacity-75">
-										<button className="ml-2 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded uppercase">
+										<LoadButton 
+											className="ml-2 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded uppercase"
+											onClick={() => buildCode()}
+											loading={ this.state.codeBuilding }
+										>
 											Start
-										</button>
+										</LoadButton>
 									</div>
 								</li>
 							</ul>
