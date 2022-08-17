@@ -29,9 +29,8 @@ class Editor extends Component {
 	}
 	
 
-	componentDidMount() {
-
-		fetch(`${process.env.REACT_APP_SITE_URL}/files/structure`, {
+	async componentDidMount() {
+		await fetch(`${process.env.REACT_APP_SITE_URL}/files/structure`, {
 			method: 'GET'
 		})
 			.then((response) => response.json())

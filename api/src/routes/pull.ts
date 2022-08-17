@@ -4,7 +4,7 @@ import * as express from 'express';
 import { simpleGit, SimpleGit, CleanOptions } from 'simple-git';
 import * as fs from 'fs';
 const path = require('path');
-const config = require('../../config.json')
+const config = require('../../../config.json')
 const gitDir: string = `${process.cwd()}/${config.gitBaseDir}`;
 
 const router = express.Router();
