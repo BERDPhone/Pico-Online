@@ -128,3 +128,4 @@ dist
 .pnp.*
 .DS_Store
 api/BDOS/
+config.json

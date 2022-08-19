@@ -9,6 +9,7 @@ import "./App.css";
 import { PullProvider } from './context/PullContext';
 
 let NavbarKey = 0;
+
 class App extends Component {
 	render() {
 
