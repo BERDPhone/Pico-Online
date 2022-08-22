@@ -11,7 +11,6 @@ const router = express.Router();
 
 router.patch('/', function(req: Request, res: Response, next: NextFunction) {
 	try {
-		
 		if (fs.existsSync(gitDir)) {
 			fs.rmSync(gitDir, { recursive: true });
 		}

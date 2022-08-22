@@ -24,7 +24,7 @@ router.get('/', (req: Request, res: Response, next: NextFunction) => {
 
 			res.json(allBranches.sort((a, b) => a.localeCompare(b)));
 		}).catch((err) => {
-			throw err;
+			console.error(err);
 		});
 });
 

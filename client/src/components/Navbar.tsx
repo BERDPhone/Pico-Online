@@ -11,7 +11,9 @@ type state = {
 	codeBuilding: boolean,
 };
 
-type props = {};
+type props = {
+	terminal: any,
+};
 
 class Navbar extends Component<props, state> {
 	state = {
