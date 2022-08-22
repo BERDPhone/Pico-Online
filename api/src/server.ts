@@ -39,6 +39,8 @@ let io = new Server(server, {
 
 // listening for connections from clients
 io.on('connection', (socket: Socket) =>{
+	console.log("getting connection");
+	
 	// listening to events from client
 	socket.on('ping', (params, callback) => {
 
@@ -47,6 +49,24 @@ io.on('connection', (socket: Socket) =>{
 
 		// broadcasting data to all other connected clients
 		socket.broadcast.emit('pong');
+	})
+
+	socket.on('clear', (params, callback) => {
+
+		// send data back to client by using emit
+		socket.emit('clear');
+
+		// broadcasting data to all other connected clients
+		socket.broadcast.emit('clear');
+	})
+
+	socket.on('pull', (params, callback) => {
+		console.log("getting pull")
+		// send data back to client by using emit
+		socket.emit('pull');
+
+		// // broadcasting data to all other connected clients
+		// socket.broadcast.emit('pull');
 	})
 })
 

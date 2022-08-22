@@ -8,7 +8,9 @@ import Editor from './components/Editor';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import Terminal from 'react-console-emulator';
-
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import constructEcho from 'react-console-emulator/dist/utils/constructEcho';
 import "./App.css";
 import { PullProvider } from './context/PullContext';
 
@@ -18,7 +20,7 @@ const socket = io("http://localhost:8000");
 
 let NavbarKey = 0;
 
-type props = {}
+type props = {};
 
 type state = {
 	connected: boolean,
@@ -26,7 +28,7 @@ type state = {
 }
 
 class App extends Component<props, state> {
-	terminal: any = React.createRef()
+	terminal: any = React.createRef();
 
 	state = {
 		connected: false,
@@ -35,31 +37,50 @@ class App extends Component<props, state> {
 
 	componentDidMount() {
 		socket.on('connect', () => {
-			console.log("connected")
+			console.log("connected");
 			this.setState({
 				connected: true
 			});
 		});
 
 		socket.on('disconnect', () => {
-			console.log("disconnected")
+			console.log("disconnected");
 			this.setState({ 
 				connected: false
 			});
 		});
 
 		socket.on('pong', () => {
-			console.log("recieved pong")
+			console.log("recieved pong");
 			this.setState({ 
 				lastPong: new Date().toISOString()
 			});
 		});
+
+		socket.on("clear", () => {
+			console.log("recieved clear");
+			this.terminal.current.clearInput();
+			this.terminal.current.terminalInput.current.value = "clear";
+			this.terminal.current.processCommand();
+		})
+
+		socket.on("pull", (gitUrl) => {
+			console.log("recieved pull");
+			// this.terminal.current.clearInput();
+			// this.terminal.current.terminalInput.current.value = "pull";
+			// this.terminal.current.processCommand();
+			const commandName = "pull"
+			this.terminal.current.pushToHistory(commandName)
+			this.terminal.current.pushToStdout(constructEcho(this.terminal.current.props.promptLabel || '$', commandName, this.terminal.current.props), { isEcho: true })
+		})
 	}
 
 	componentWillUnmount() {
 		socket.off('connect');
 		socket.off('disconnect');
 		socket.off('pong');
+		socket.off('clear');
+		socket.off('pull');
 	}
 
 	sendPing = () => {
@@ -84,16 +105,9 @@ class App extends Component<props, state> {
 		return (
 			<PullProvider>
 				<div className="flex flex-col">
-					<Navbar terminal={this.terminal.current} />
+					<Navbar socket={socket} />
 
 					<Editor key={NavbarKey += 1} />
-
-					<div>
-						<p>Connected: { '' + this.state.connected }</p>
-						<p>Last pong: { this.state.lastPong || '-' }</p>
-						<button onClick={ this.sendPing }>Send ping</button>
-					</div>
-
 
 					<Resizable
 						className="bg-current "

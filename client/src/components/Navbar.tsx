@@ -3,6 +3,7 @@ import React, { Component } from "react";
 import { FaBars } from "react-icons/fa";
 import LoadButton from "./LoadButton";
 import { PullContext, PullContextConsumer, PullDispatchContextConsumer } from "../context/PullContext";
+import { Socket } from "socket.io-client";
 
 type state = {
 	navbarOpen: boolean,
@@ -12,7 +13,7 @@ type state = {
 };
 
 type props = {
-	terminal: any,
+	socket: Socket,
 };
 
 class Navbar extends Component<props, state> {
@@ -54,17 +55,19 @@ class Navbar extends Component<props, state> {
 		}
 
 		const pull = (callback: Function) => {
-			callback(true);
+			// callback(true);
 
-			fetch(`${process.env.REACT_APP_API_URL}/pull`, {
-				method: 'PATCH'
-			})
-				.then((response) => response.json())
-				.then((data) => {
-					if (data.status === 200) {
-						callback(false);
-					}
-				});
+			// fetch(`${process.env.REACT_APP_API_URL}/pull`, {
+			// 	method: 'PATCH'
+			// })
+			// 	.then((response) => response.json())
+			// 	.then((data) => {
+			// 		if (data.status === 200) {
+			// 			callback(false);
+			// 		}
+			// 	});
+			console.log("pulling")
+			this.props.socket.emit("pull");
 		}
 
 		return (
