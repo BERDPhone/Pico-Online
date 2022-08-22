@@ -14,6 +14,7 @@ type state = {
 
 type props = {
 	socket: Socket,
+	terminal: any,
 };
 
 class Navbar extends Component<props, state> {
@@ -24,8 +25,7 @@ class Navbar extends Component<props, state> {
 		codeBuilding: false,
 	}
 
-	static contextType = PullContext;	
-	// static setPulling = React.useContext(PullDispatchContext);
+	static contextType = PullContext;
 
 	componentDidMount() {
 		fetch(`${process.env.REACT_APP_API_URL}/branch`, {
@@ -40,34 +40,16 @@ class Navbar extends Component<props, state> {
 	render() {
 
 		const buildCode = () => {
-			this.setState({ codeBuilding: true });
-			fetch(`${process.env.REACT_APP_API_URL}/build`, {
-				method: 'POST'
-			})
-				.then((response) => response.json())
-				.then((data) => {
-					console.log(data);
-					this.setState({ codeBuilding: false });
-				})
-				.catch(() => {
-					this.setState({ codeBuilding: false });	
-				});
+			this.props.terminal.clearInput();
+			this.props.terminal.terminalInput.current.value = "build";
+			this.props.terminal.processCommand();
 		}
 
 		const pull = (callback: Function) => {
-			// callback(true);
-
-			// fetch(`${process.env.REACT_APP_API_URL}/pull`, {
-			// 	method: 'PATCH'
-			// })
-			// 	.then((response) => response.json())
-			// 	.then((data) => {
-			// 		if (data.status === 200) {
-			// 			callback(false);
-			// 		}
-			// 	});
 			console.log("pulling")
-			this.props.socket.emit("pull");
+			this.props.terminal.clearInput();
+			this.props.terminal.terminalInput.current.value = "pull";
+			this.props.terminal.processCommand();
 		}
 
 		return (
@@ -136,7 +118,7 @@ class Navbar extends Component<props, state> {
 											onClick={() => buildCode()}
 											loading={ this.state.codeBuilding }
 										>
-											Start
+											Build
 										</LoadButton>
 									</div>
 								</li>

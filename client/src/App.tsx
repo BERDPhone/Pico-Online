@@ -66,10 +66,20 @@ class App extends Component<props, state> {
 
 		socket.on("pull", (gitUrl) => {
 			console.log("recieved pull");
-			// this.terminal.current.clearInput();
-			// this.terminal.current.terminalInput.current.value = "pull";
-			// this.terminal.current.processCommand();
 			const commandName = "pull"
+			this.terminal.current.pushToHistory(commandName)
+			this.terminal.current.pushToStdout(constructEcho(this.terminal.current.props.promptLabel || '$', commandName, this.terminal.current.props), { isEcho: true })
+		})
+
+		socket.on("stdout", (out) => {
+			console.log("recieving stdout");
+			console.log("out: ", out);
+			this.terminal.current.pushToStdout(out)
+		})
+
+		socket.on("branch", () => {
+			console.log("recieving branch");
+			const commandName = "branch"
 			this.terminal.current.pushToHistory(commandName)
 			this.terminal.current.pushToStdout(constructEcho(this.terminal.current.props.promptLabel || '$', commandName, this.terminal.current.props), { isEcho: true })
 		})
@@ -81,6 +91,8 @@ class App extends Component<props, state> {
 		socket.off('pong');
 		socket.off('clear');
 		socket.off('pull');
+		socket.off('stdout');
+		socket.off('branch');
 	}
 
 	sendPing = () => {
@@ -97,6 +109,18 @@ class App extends Component<props, state> {
 				setTimeout(() => terminal.pushToStdout('Hello after 1 second!'), 1500)
 				return 'Running, please wait...'
 			}
+		},
+		pull: {
+			description: 'Does a git pull to update the current repository',
+			fn: () => {
+				socket.emit("pull");
+			}
+		},
+		branch: {
+			description: 'Lists all branches if no arguement supplied, switches branch if arguement provided',
+			fn: (args: string) => {
+				socket.emit("branch", args);
+			}
 		}
 
 	}
@@ -105,7 +129,7 @@ class App extends Component<props, state> {
 		return (
 			<PullProvider>
 				<div className="flex flex-col">
-					<Navbar socket={socket} />
+					<Navbar socket={socket} terminal={this.terminal.current} />
 
 					<Editor key={NavbarKey += 1} />
 
@@ -122,6 +146,9 @@ class App extends Component<props, state> {
 
 					>
 							<Terminal
+								style={{minHeight: "0px"}}
+								className="h-full"
+								promptLabelStyle={{paddingTop: "0px"}}
 								ref={this.terminal} // Assign ref to the terminal here
 								commands={this.commands}
 							/>

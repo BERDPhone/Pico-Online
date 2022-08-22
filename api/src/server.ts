@@ -5,7 +5,14 @@ import helmet from 'helmet';
 import * as morgan from 'morgan';
 import apiRouter from './routes';
 import { Server, Socket } from 'socket.io';
+import { simpleGit, SimpleGit, CleanOptions } from 'simple-git';
+import * as fs from 'fs';
+import { spawn } from 'child_process';
 
+const path = require('path');
+const config = require('../../config.json')
+
+const gitDir: string = `${process.cwd()}/${config.gitBaseDir}`;
 const app = express();
 
 app.use(helmet())
@@ -40,7 +47,7 @@ let io = new Server(server, {
 // listening for connections from clients
 io.on('connection', (socket: Socket) =>{
 	console.log("getting connection");
-	
+
 	// listening to events from client
 	socket.on('ping', (params, callback) => {
 
@@ -62,12 +69,99 @@ io.on('connection', (socket: Socket) =>{
 
 	socket.on('pull', (params, callback) => {
 		console.log("getting pull")
-		// send data back to client by using emit
-		socket.emit('pull');
 
 		// // broadcasting data to all other connected clients
-		// socket.broadcast.emit('pull');
+		socket.broadcast.emit('pull');
+
+		try {
+			if (fs.existsSync(gitDir)) {
+				fs.rmSync(gitDir, { recursive: true });
+			}
+
+			fs.mkdirSync(gitDir);
+
+			const options = {
+				baseDir: gitDir,
+			};
+
+			simpleGit(options).clean(CleanOptions.FORCE);
+
+			const remote = config.gitRepository;
+
+			simpleGit()
+				.clone(remote)
+				.then(() => {
+					socket.emit('stdout', "Successfully pulled " + config.gitBaseDir + " from github");
+					socket.broadcast.emit('stdout', "Successfully pulled " + config.gitBaseDir + " from github");
+				}).catch((err) => {
+					throw err;
+				});
+
+		} catch (error) {
+			socket.emit('stdout', "Error attempting to pull the repository");
+			socket.broadcast.emit('stdout', "Error attempting to pull the repository");
+		}
+	})
+
+	socket.on('branch', (params, callback) => {
+		console.log("getting pull")
+		// broadcasting data to all other connected clients
+		socket.broadcast.emit('branch', params);
+
+		if (params) {
+			socket.emit('stdout', params);
+			simpleGit(gitDir)
+				.checkout(`remotes/origin/${params}`)
+				.then(() => {
+					socket.emit('stdout', `Successfully changed branch to ${params}`);
+					socket.broadcast.emit('stdout', `Successfully changed branch to ${params}`);
+				})
+				.catch((err) => {
+					socket.emit('stdout', `Error attempting to change to ${params} branch`);
+					socket.broadcast.emit('stdout', `Error attempting to change to ${params} branch`);
+				});
+		} else {
+			simpleGit(gitDir)
+				.branch()
+				.then((branches) => {
+					// remotes/origin/
+					// console.log("branches: ", branches.all)
+					let allBranches: string[] = [];
+					branches.all.forEach(branch => {
+						if (branch.includes("remotes/origin/")) {
+							allBranches.push(branch.replace("remotes/origin/", ""));
+						}
+					})
+					allBranches = allBranches.sort((a, b) => a.localeCompare(b));
+					allBranches.forEach((branch) => {
+						socket.emit('stdout', branch);
+						socket.broadcast.emit('stdout', branch);
+					})
+				}).catch((err) => {
+					socket.emit('stdout', "Error attempting to branches from the repository");
+					socket.broadcast.emit('stdout', "Error attempting to branches from the repository");
+				});
+		}
+	})
+
+	socket.on('build', (params, callback) => {
+		const child = spawn(`cd ${gitDir}/build && PICO_BOARD=pico_w cmake .. && make ${config.buildTarget} && openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program pico_w/blink/picow_blink.elf verify reset exit"`, {
+			shell: true
+		});	
+
+		child.stderr.on('data', function (data) {
+			socket.emit('stdout', data.toString());
+			socket.broadcast.emit('stdout', data.toString());
+		});
+		child.stdout.on('data', function (data) {
+			socket.emit('stdout', data.toString());
+			socket.broadcast.emit('stdout', data.toString());
+		});
+		child.on('exit', function (exitCode) {
+			socket.emit('stdout', `Child exited with code: ${exitCode}`);
+			socket.broadcast.emit('stdout', `Child exited with code: ${exitCode}`);
+		});
+	
 	})
 })
-
 
