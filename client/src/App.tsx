@@ -16,7 +16,7 @@ import { PullProvider } from './context/PullContext';
 
 console.log("process.env.REACT_APP_API_URL!: ", process.env.REACT_APP_API_URL!);
 
-const socket = io("http://localhost:8000");
+const socket = io(new URL(process.env.REACT_APP_API_URL!).origin);
 
 let NavbarKey = 0;
 
