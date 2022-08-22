@@ -4,6 +4,7 @@ import * as cors from 'cors';
 import helmet from 'helmet';
 import * as morgan from 'morgan';
 import apiRouter from './routes';
+import { Server, Socket } from 'socket.io';
 
 const app = express();
 
@@ -27,4 +28,26 @@ app.use((err: any, req: Request, res: Response, next: NextFunction): void => {
 })
 
 const port = process.env.PORT || 8000;
-app.listen(port, () => console.log(`Server listening on port: ${port}`));
+const server = app.listen(port, () => console.log(`Server listening on port: ${port}`));
+
+let io = new Server(server, {
+	cors: {
+		origin: "*",
+		methods: ["GET", "POST"]
+	}
+});
+
+// listening for connections from clients
+io.on('connection', (socket: Socket) =>{
+	// listening to events from client
+	socket.on('ping', (params, callback) => {
+
+		// send data back to client by using emit
+		socket.emit('pong');
+
+		// broadcasting data to all other connected clients
+		socket.broadcast.emit('pong');
+	})
+})
+
+

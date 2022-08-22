@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import { Resizable } from 're-resizable';
-import { ReactTerminal } from "react-terminal";
+import { io } from "socket.io-client";
 
 import Navbar from './components/Navbar';
 import Editor from './components/Editor';
@@ -12,15 +12,61 @@ import Terminal from 'react-console-emulator';
 import "./App.css";
 import { PullProvider } from './context/PullContext';
 
+console.log("process.env.REACT_APP_API_URL!: ", process.env.REACT_APP_API_URL!);
+
+const socket = io("http://localhost:8000");
+
 let NavbarKey = 0;
 
-class App extends Component {
-	terminal: any
+type props = {}
 
-	constructor ({ props }: any) {
-		super(props)
-		this.terminal = React.createRef()
+type state = {
+	connected: boolean,
+	lastPong: null | string
+}
+
+class App extends Component<props, state> {
+	terminal: any = React.createRef()
+
+	state = {
+		connected: false,
+		lastPong: null
 	}
+
+	componentDidMount() {
+		socket.on('connect', () => {
+			console.log("connected")
+			this.setState({
+				connected: true
+			});
+		});
+
+		socket.on('disconnect', () => {
+			console.log("disconnected")
+			this.setState({ 
+				connected: false
+			});
+		});
+
+		socket.on('pong', () => {
+			console.log("recieved pong")
+			this.setState({ 
+				lastPong: new Date().toISOString()
+			});
+		});
+	}
+
+	componentWillUnmount() {
+		socket.off('connect');
+		socket.off('disconnect');
+		socket.off('pong');
+	}
+
+	sendPing = () => {
+		console.log("sending ping...")
+		socket.emit('ping');
+	}
+
 
 	commands = {
 		wait: {
@@ -31,7 +77,7 @@ class App extends Component {
 				return 'Running, please wait...'
 			}
 		}
-		
+
 	}
 
 	render() {
@@ -41,6 +87,12 @@ class App extends Component {
 					<Navbar terminal={this.terminal.current} />
 
 					<Editor key={NavbarKey += 1} />
+
+					<div>
+						<p>Connected: { '' + this.state.connected }</p>
+						<p>Last pong: { this.state.lastPong || '-' }</p>
+						<button onClick={ this.sendPing }>Send ping</button>
+					</div>
 
 
 					<Resizable

@@ -27,7 +27,7 @@ class Navbar extends Component<props, state> {
 	// static setPulling = React.useContext(PullDispatchContext);
 
 	componentDidMount() {
-		fetch(`${process.env.REACT_APP_SITE_URL}/branch`, {
+		fetch(`${process.env.REACT_APP_API_URL}/branch`, {
 			method: 'GET'
 		})
 			.then((response) => response.json())
@@ -40,7 +40,7 @@ class Navbar extends Component<props, state> {
 
 		const buildCode = () => {
 			this.setState({ codeBuilding: true });
-			fetch(`${process.env.REACT_APP_SITE_URL}/build`, {
+			fetch(`${process.env.REACT_APP_API_URL}/build`, {
 				method: 'POST'
 			})
 				.then((response) => response.json())
@@ -56,7 +56,7 @@ class Navbar extends Component<props, state> {
 		const pull = (callback: Function) => {
 			callback(true);
 
-			fetch(`${process.env.REACT_APP_SITE_URL}/pull`, {
+			fetch(`${process.env.REACT_APP_API_URL}/pull`, {
 				method: 'PATCH'
 			})
 				.then((response) => response.json())

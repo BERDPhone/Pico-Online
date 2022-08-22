@@ -10,7 +10,7 @@ export default function Dropdown({ branches }: props) {
 
 	const branchChanged = (event: any, callback: Function) => {
 		callback(true);
-		fetch(`${process.env.REACT_APP_SITE_URL}/branch/${event.target.value}`, {
+		fetch(`${process.env.REACT_APP_API_URL}/branch/${event.target.value}`, {
 			method: 'PATCH'
 		})
 			.then((response) => response.json())

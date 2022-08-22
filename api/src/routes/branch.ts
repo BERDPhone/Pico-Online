@@ -14,7 +14,7 @@ router.get('/', (req: Request, res: Response, next: NextFunction) => {
 		.branch()
 		.then((branches) => {
 			// remotes/origin/
-			console.log("branches: ", branches.all)
+			// console.log("branches: ", branches.all)
 			let allBranches: string[] = [];
 			branches.all.forEach(branch => {
 				if (branch.includes("remotes/origin/")) {
