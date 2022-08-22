@@ -38,6 +38,7 @@ const port = process.env.PORT || 8000;
 const server = app.listen(port, () => console.log(`Server listening on port: ${port}`));
 
 let io = new Server(server, {
+	path: "/api/socket",
 	cors: {
 		origin: "*",
 		methods: ["GET", "POST"]
