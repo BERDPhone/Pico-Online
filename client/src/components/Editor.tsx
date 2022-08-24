@@ -17,41 +17,21 @@ import { PullContext } from "../context/PullContext";
 let fileExplorerKey = 0;
 
 type props = {
-	fileContents: string
+	fileContents: string,
+	fileStruct: FileStruct
 }
 
-type state = {
-	files: FileStruct
-}
 
-class Editor extends Component<props, state> {
-	fileData: FileStruct = { name: "BDOS", type: "folder" };
+class Editor extends Component<props> {
 
 	static contextType = PullContext;
-
-	state = {
-		files: this.fileData
-	};
 
 	increaseFileExplorerKey = () => {
 		return fileExplorerKey +=1;
 	}
-	
 
-	async componentDidMount() {
-		await fetch(`${process.env.REACT_APP_API_URL}/files/structure`, {
-			method: 'GET'
-		})
-			.then((response) => response.json())
-			.then((data: FileStruct) => {
-				if (data.status === 200) {
-					this.setState({files: data});
-				}
-			});
-	}
-
-	shouldComponentUpdate(nextProps: props, nextState: state) {
-		if (nextState !== this.state) return true;
+	shouldComponentUpdate(nextProps: props) {
+		// if (nextProps.fileStruct !== this.props.fileStruct) return true;
 		return false;
 	}
 
@@ -157,7 +137,7 @@ class Editor extends Component<props, state> {
 					// minHeight="100%"
 				>
 					{
-						((Object.keys(this.state.files).length === 0) || this.context) ? 
+						((Object.keys(this.props.fileStruct).length === 0) || this.context) ? 
 							<FileExplorer 
 								loading={true} 
 								key={fileExplorerKey} 
@@ -165,7 +145,7 @@ class Editor extends Component<props, state> {
 							/> : 
 
 							<FileExplorer 
-								files={this.state.files} 
+								files={this.props.fileStruct} 
 								loading={false} 
 								key={fileExplorerKey} 
 								increaseKey={this.increaseFileExplorerKey}
