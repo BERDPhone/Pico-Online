@@ -29,13 +29,13 @@ class Navbar extends Component<props, state> {
 	static contextType = PullContext;
 
 	componentDidMount() {
-		fetch(`${process.env.REACT_APP_API_URL}/branch`, {
-			method: 'GET'
-		})
-			.then((response) => response.json())
-			.then((data) => {
-				this.setState({ branches: data });
-			});
+		// fetch(`${process.env.REACT_APP_API_URL}/branch`, {
+		// 	method: 'GET'
+		// })
+		// 	.then((response) => response.json())
+		// 	.then((data) => {
+		// 		this.setState({ branches: data });
+		// 	});
 	}
 
 	render() {

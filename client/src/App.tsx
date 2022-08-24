@@ -15,7 +15,7 @@ import "./App.css";
 import { PullProvider } from './context/PullContext';
 
 const socket = io(new URL(process.env.REACT_APP_API_URL!).origin, {
-	path: "/api/socket"
+	path: "/api"
 });
 
 let NavbarKey = 0;
@@ -24,9 +24,9 @@ type props = {};
 
 type state = {
 	connected: boolean,
-	lastPong: null | string,
 	branch: string,
-	fileContents: string
+	fileContents: string,
+	filestruct: object,
 }
 
 class App extends Component<props, state> {
@@ -34,9 +34,14 @@ class App extends Component<props, state> {
 
 	state = {
 		connected: false,
-		lastPong: null,
 		branch: "main",
-		fileContents: "Select file to start editing"
+		fileContents: "Select file to start editing",
+		filestruct: {
+			"name": "loading",
+			"type": "folder",
+			"children": [],
+			"status": 500,
+		}
 	}
 
 	componentDidMount() {
@@ -88,7 +93,13 @@ class App extends Component<props, state> {
 			this.setState({
 				"branch": out
 			});
+		})
 
+		socket.on('filestruct', (out: object) => {
+			console.log(`Updating the file structure: ${out}`)
+			this.setState({
+				"filestruct": out
+			});
 		})
 
 		socket.on('fileContents', (out: string) => {
@@ -102,6 +113,7 @@ class App extends Component<props, state> {
 		})
 
 		socket.emit("getBranch");
+		socket.emit("getStructure");
 	}
 
 	componentWillUnmount() {
@@ -113,45 +125,46 @@ class App extends Component<props, state> {
 		socket.off('branch');
 		socket.off('fileContents');
 		socket.off('displayBranch');
+		socket.off('filestruct');
+		socket.off('getBranch')
+		socket.off('getStructure')
 	}
 
 	shouldComponentUpdate(nextProps: props, nextState: state) {
-		if (nextState !== this.state) return true;
-		return false;
+		// if (nextState.filestruct !== this.state.filestruct) return true;
+		return true;
 	}
 
 
 	commands = {
-		wait: {
-			description: 'Waits one second and sends a message.',
-			fn: () => {
-				const terminal = this.terminal.current
-				setTimeout(() => terminal.pushToStdout('Hello after 1 second!'), 1500)
-				return 'Running, please wait...'
-			}
-		},
 		pull: {
-			description: 'Does a git pull to update the current repository',
+			description: 'Does a git pull to update the current repository.',
 			fn: () => {
 				socket.emit("pull");
 			}
 		},
 		branch: {
-			description: 'Lists all branches if no arguement supplied, switches branch if arguement provided',
+			description: 'Lists all branches if no arguement supplied, switches branch if arguement provided.',
 			fn: (args: string) => {
 				socket.emit("branch", args);
 			}
 		},
 		build: {
-			description: 'Build and runs the code on the raspberry pi pico',
+			description: 'Build and runs the code on the raspberry pi pico.',
 			fn: (args: string) => {
 				socket.emit("build", args);
 			}
 		},
 		edit: {
-			description: 'Alows you to edit a file in the editor',
+			description: 'Alows you to edit a file in the editor.',
 			fn: (args: string) => {
 				socket.emit("edit", args);
+			}
+		},
+		structure: {
+			description: 'Updates the file structure in the file manager.',
+			fn: (args: string) => {
+				socket.emit("filestruct");
 			}
 		}
 
@@ -163,7 +176,7 @@ class App extends Component<props, state> {
 				<div className="flex flex-col">
 					<Navbar socket={socket} terminal={this.terminal.current} branch={this.state.branch} />
 
-					<Editor key={NavbarKey += 1} fileContents={this.state.fileContents} />
+					<Editor key={NavbarKey += 1} fileContents={this.state.fileContents} fileStruct={this.state.filestruct} />
 
 					<Resizable
 						className="bg-current "

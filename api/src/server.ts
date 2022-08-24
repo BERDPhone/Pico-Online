@@ -1,9 +1,3 @@
-import { Request, Response, NextFunction } from 'express';
-import * as express from 'express';
-import * as cors from 'cors';
-import helmet from 'helmet';
-import * as morgan from 'morgan';
-import apiRouter from './routes';
 import { Server, Socket } from 'socket.io';
 import { simpleGit, SimpleGit, CleanOptions } from 'simple-git';
 import * as fs from 'fs';
@@ -14,31 +8,11 @@ const path = require('path');
 const config = require('../../config.json')
 
 const gitDir: string = `${process.cwd()}/${config.gitBaseDir}`;
-const app = express();
 
-const server = http.createServer(app);
-
-app.use(helmet())
-app.use(cors());
-app.use(express.json());
-app.use(morgan('combined'));
-
-app.disable('x-powered-by')
-
-app.use('/api', apiRouter);
-
-app.use((req: Request, res: Response, next: NextFunction): void => {
-	res.status(404).send("Sorry can't find that!")
-})
-
-// custom error handler
-app.use((err: any, req: Request, res: Response, next: NextFunction): void => {
-	console.error(err.stack)
-	res.status(500).send('Something broke!')
-})
+const server = http.createServer();
 
 let io = new Server(server, {
-	path: "/api/socket",
+	path: "/api",
 	cors: {
 		origin: "*",
 		methods: ["GET", "POST"]
@@ -50,6 +24,108 @@ let currentBranch = "main"
 // listening for connections from clients
 io.on('connection', (socket: Socket) =>{
 	console.log("getting connection");
+
+	socket.on('getStructure', (params, callback) => {
+		// socket.emit('stdout', `Updating file structure`);
+		let diretoryTreeToObj = function(dir: string, done: Function) {
+		let results: File[] = [];
+
+		fs.readdir(dir, function(err, list) {
+			if (err)
+				return done(err);
+
+			let pending = list.length;
+
+			if (!pending)
+				return done(null, {name: path.basename(dir), type: 'folder', children: results});
+
+			list.forEach(function(file) {
+				file = path.resolve(dir, file);
+				fs.stat(file, function(err, stat) {
+					if (stat && stat.isDirectory()) {
+						diretoryTreeToObj(file, function(err: any, res: File[]) {
+							results.push({
+								name: path.basename(file),
+								type: 'folder',
+								children: res
+							});
+							if (!--pending)
+								done(null, results);
+						});
+					}
+					else {
+						results.push({
+							type: 'file',
+							name: path.basename(file)
+						});
+						if (!--pending)
+							done(null, results);
+					}
+				});
+			});
+		});
+	};
+
+	diretoryTreeToObj(gitDir, function(err: any, response: File[]) {
+		try {
+			if(err) {
+				console.error(err);
+
+				socket.emit('stdout', `Failed to get file structure`);
+			} else {
+				// const orderChildren = obj => {
+				// 	obj.children.sort((a, b) => b.type.localeCompare(a.type));
+				// 	if (obj.children.some(o => o.children.length)) {
+				// 		obj.children.forEach(child => orderChildren(child));
+				// 	}
+				// 	return obj;
+				// };
+
+				const sortArray = (array: File[]) => {
+					array.sort((a, b) => a.name.localeCompare(b.name));
+					array.sort((a, b) => b.type.localeCompare(a.type));
+					array.forEach(a => {
+						if (a.children && a.children.length > 0)
+							sortArray(a.children)
+					})
+					return array;
+				}
+
+				response = sortArray(response);
+
+				socket.broadcast.emit('filestruct', {
+					"name": config.gitBaseDir,
+					"type": "folder",
+					"children": response,
+					"status": 200,
+				});
+				socket.emit('filestruct', {
+					"name": config.gitBaseDir,
+					"type": "folder",
+					"children": response,
+					"status": 200,
+				});
+			}
+		} catch (erorr) {
+
+			socket.broadcast.emit('filestruct', {
+				"name": config.gitBaseDir,
+				"type": "folder",
+				"children": [],
+				"status": 500,
+			});
+			socket.emit('filestruct', {
+				"name": config.gitBaseDir,
+				"type": "folder",
+				"children": [],
+				"status": 500,
+			});
+
+			socket.emit('stdout', `Failed to get file structure`);
+		}
+	});
+
+	})
 
 	socket.on('getBranch', (params, callback) => {
 		simpleGit(gitDir)
@@ -197,6 +273,11 @@ io.on('connection', (socket: Socket) =>{
 })
 
 
-
 const port = process.env.PORT || 8000;
 server.listen(port, () => console.log(`Server listening on port: ${port}`));
+
+interface File {
+	name: string; 
+	type: string; 
+	children?: File[];
+}
