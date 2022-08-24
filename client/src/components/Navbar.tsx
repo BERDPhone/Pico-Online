@@ -15,6 +15,7 @@ type state = {
 type props = {
 	socket: Socket,
 	terminal: any,
+	branch: string,
 };
 
 class Navbar extends Component<props, state> {
@@ -86,7 +87,7 @@ class Navbar extends Component<props, state> {
 						>
 							<ul className="flex flex-col lg:flex-row list-none lg:ml-auto">
 								<li className="nav-item">
-									<Dropdown branches={ this.state.branches } key="1" />
+									<Dropdown terminal={this.props.terminal} branches={ this.state.branches } branch={this.props.branch} key="1" />
 								</li>
 								<li className="nav-item">
 									<div className="px-3 py-2 flex items-center text-xs uppercase font-bold leading-snug text-white hover:opacity-75">

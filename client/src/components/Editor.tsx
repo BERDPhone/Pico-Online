@@ -3,11 +3,12 @@ import { Resizable } from 're-resizable';
 
 import CodeMirror from '@uiw/react-codemirror';
 import { langs } from '@uiw/codemirror-extensions-langs';
-import {EditorView, gutter, GutterMarker} from "@codemirror/view"
-import {StateField, StateEffect, RangeSet} from "@codemirror/state"
+import {EditorView, gutter, GutterMarker, ViewPlugin} from "@codemirror/view"
+import {StateField, StateEffect, RangeSet, EditorState} from "@codemirror/state"
 import { basicSetup } from '@uiw/codemirror-extensions-basic-setup';
 import { createTheme } from '@uiw/codemirror-themes'
 import { tags as t } from '@lezer/highlight';
+import { indentUnit } from '@codemirror/language'
 
 import FileExplorer, {FileStruct} from './FileExplorer'
 
@@ -15,7 +16,15 @@ import { PullContext } from "../context/PullContext";
 
 let fileExplorerKey = 0;
 
-class Editor extends Component {
+type props = {
+	fileContents: string
+}
+
+type state = {
+	files: FileStruct
+}
+
+class Editor extends Component<props, state> {
 	fileData: FileStruct = { name: "BDOS", type: "folder" };
 
 	static contextType = PullContext;
@@ -39,6 +48,11 @@ class Editor extends Component {
 					this.setState({files: data});
 				}
 			});
+	}
+
+	shouldComponentUpdate(nextProps: props, nextState: state) {
+		if (nextState !== this.state) return true;
+		return false;
 	}
 
 	render() {
@@ -163,19 +177,19 @@ class Editor extends Component {
 					this.context ?
 						<CodeMirror
 							className="backdrop-blur-sm bg-white/30 flex-1 overflow-scroll"
-							value="console.log('hello world!');"
 							theme={sublimeLike}
 							height="100%"
 							basicSetup={false}
-							extensions={[EditorView.contentAttributes.of({ contenteditable: 'false' }), breakpointGutter, basicSetup(), langs.c()]}
+							extensions={[indentUnit.of("\t"), EditorView.contentAttributes.of({ contenteditable: 'false' }), breakpointGutter, basicSetup(), langs.c()]}
+							value={this.props.fileContents}
 						/>
 					: <CodeMirror
 							className="flex-1 overflow-scroll"
-							value="console.log('hello world!');"
 							theme={sublimeLike}
 							height="100%"
 							basicSetup={false}
-							extensions={[breakpointGutter, basicSetup(), langs.c()]}
+							extensions={[indentUnit.of("\t"), breakpointGutter, basicSetup(), langs.c()]}
+							value={this.props.fileContents}
 						/>
 				}
 			</div>

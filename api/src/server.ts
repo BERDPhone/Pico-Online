@@ -45,18 +45,26 @@ let io = new Server(server, {
 	}
 });
 
+let currentBranch = "main"
+
 // listening for connections from clients
 io.on('connection', (socket: Socket) =>{
 	console.log("getting connection");
 
-	// listening to events from client
-	socket.on('ping', (params, callback) => {
-
-		// send data back to client by using emit
-		socket.emit('pong');
-
-		// broadcasting data to all other connected clients
-		socket.broadcast.emit('pong');
+	socket.on('getBranch', (params, callback) => {
+		simpleGit(gitDir)
+			.branch()
+			.then((branches) => {
+				if (branches.current.includes("origin/")) {
+					let currentBranch = branches.current.replace("origin/", "");
+					socket.emit("displayBranch", currentBranch);
+				} else {
+					socket.emit("displayBranch", currentBranch);
+				}
+			})
+			.catch(error => {
+				console.error(error);
+			})
 	})
 
 	socket.on('clear', (params, callback) => {
@@ -106,16 +114,19 @@ io.on('connection', (socket: Socket) =>{
 
 	socket.on('branch', (params, callback) => {
 		console.log("getting pull")
+
 		// broadcasting data to all other connected clients
 		socket.broadcast.emit('branch', params);
 
 		if (params) {
-			socket.emit('stdout', params);
+			// socket.emit('stdout', params);
 			simpleGit(gitDir)
 				.checkout(`remotes/origin/${params}`)
 				.then(() => {
 					socket.emit('stdout', `Successfully changed branch to ${params}`);
 					socket.broadcast.emit('stdout', `Successfully changed branch to ${params}`);
+					socket.emit('displayBranch', params)
+					socket.broadcast.emit('displayBranch', params);
 				})
 				.catch((err) => {
 					socket.emit('stdout', `Error attempting to change to ${params} branch`);
@@ -154,15 +165,34 @@ io.on('connection', (socket: Socket) =>{
 			socket.emit('stdout', data.toString());
 			socket.broadcast.emit('stdout', data.toString());
 		});
+
 		child.stdout.on('data', function (data) {
 			socket.emit('stdout', data.toString());
 			socket.broadcast.emit('stdout', data.toString());
 		});
+
 		child.on('exit', function (exitCode) {
 			socket.emit('stdout', `Child exited with code: ${exitCode}`);
 			socket.broadcast.emit('stdout', `Child exited with code: ${exitCode}`);
 		});
 	
+	})
+
+	socket.on('edit', (params, callback) => {
+		try {
+			const buffer = fs.readFileSync(`${gitDir}/${params}`);
+			const fileContent = buffer.toString();
+
+			socket.emit('stdout', `Displaying file in editor`);
+
+			socket.emit('fileContents', fileContent)
+		} catch (error) {
+			if (params) {
+				socket.emit('stdout', 'Incorrect file path provided');
+			} else {
+				socket.emit('stdout', 'No file path provided');
+			}
+		}	
 	})
 })
 

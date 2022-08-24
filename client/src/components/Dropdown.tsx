@@ -3,25 +3,18 @@ import React from 'react'
 import { PullDispatchContextConsumer } from "../context/PullContext";
 
 type props = {
-	branches: string[]
+	terminal: any,
+	branches: string[],
+	branch: string
 }
 
-export default function Dropdown({ branches }: props) {
+export default function Dropdown({ branches, terminal, branch}: props) {
 
 	const branchChanged = (event: any, callback: Function) => {
-		callback(true);
-		fetch(`${process.env.REACT_APP_API_URL}/branch/${event.target.value}`, {
-			method: 'PATCH'
-		})
-			.then((response) => response.json())
-			.then((data) => {
-				callback(false);
-				if (data.status === 200) {
-					console.log("Successfully changed branch")
-				} else {
-					console.log(`Failed to change to branch ${event.target.value}`)
-				}
-			});
+		console.log(`changing branch to ${event.target.value}`)
+		terminal.clearInput();
+		terminal.terminalInput.current.value = `branch ${event.target.value}`;
+		terminal.processCommand();
 	}
 
 	return (
@@ -47,9 +40,10 @@ export default function Dropdown({ branches }: props) {
 								focus:text-white-800 focus:bg-pink-300 focus:border-blue-600 focus:outline-none" 
 							aria-label="Default select example"
 							onChange={(event) => {branchChanged(event, setLoading)}}
+							value={branch}
 						>
-							{ branches.map(branch => {
-								return (<option key={branch}>{branch}</option>)
+							{ branches.map(listbranches => {
+								return (<option key={listbranches}>{listbranches}</option>)
 							}) }
 							{/* <option value="1">Process-Status-Management</option>
 							<option value="2">Two</option>

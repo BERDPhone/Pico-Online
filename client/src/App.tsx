@@ -14,8 +14,6 @@ import constructEcho from 'react-console-emulator/dist/utils/constructEcho';
 import "./App.css";
 import { PullProvider } from './context/PullContext';
 
-console.log("process.env.REACT_APP_API_URL!: ", process.env.REACT_APP_API_URL!);
-
 const socket = io(new URL(process.env.REACT_APP_API_URL!).origin, {
 	path: "/api/socket"
 });
@@ -26,7 +24,9 @@ type props = {};
 
 type state = {
 	connected: boolean,
-	lastPong: null | string
+	lastPong: null | string,
+	branch: string,
+	fileContents: string
 }
 
 class App extends Component<props, state> {
@@ -34,7 +34,9 @@ class App extends Component<props, state> {
 
 	state = {
 		connected: false,
-		lastPong: null
+		lastPong: null,
+		branch: "main",
+		fileContents: "Select file to start editing"
 	}
 
 	componentDidMount() {
@@ -52,18 +54,12 @@ class App extends Component<props, state> {
 			});
 		});
 
-		socket.on('pong', () => {
-			console.log("recieved pong");
-			this.setState({ 
-				lastPong: new Date().toISOString()
-			});
-		});
-
 		socket.on("clear", () => {
 			console.log("recieved clear");
 			this.terminal.current.clearInput();
 			this.terminal.current.terminalInput.current.value = "clear";
 			this.terminal.current.processCommand();
+			this.terminal.current.scrollToBottom();
 		})
 
 		socket.on("pull", (gitUrl) => {
@@ -71,35 +67,57 @@ class App extends Component<props, state> {
 			const commandName = "pull"
 			this.terminal.current.pushToHistory(commandName)
 			this.terminal.current.pushToStdout(constructEcho(this.terminal.current.props.promptLabel || '$', commandName, this.terminal.current.props), { isEcho: true })
+			this.terminal.current.scrollToBottom();
 		})
 
 		socket.on("stdout", (out) => {
 			console.log("recieving stdout");
-			console.log("out: ", out);
 			this.terminal.current.pushToStdout(out)
+			this.terminal.current.scrollToBottom();
 		})
 
-		socket.on("branch", () => {
-			console.log("recieving branch");
+		socket.on("branch", (out: string) => {
 			const commandName = "branch"
 			this.terminal.current.pushToHistory(commandName)
 			this.terminal.current.pushToStdout(constructEcho(this.terminal.current.props.promptLabel || '$', commandName, this.terminal.current.props), { isEcho: true })
+			this.terminal.current.scrollToBottom();
 		})
+
+		socket.on('displayBranch', (out: string) => {
+			console.log(`changing branch in dropdown to ${out}`)
+			this.setState({
+				"branch": out
+			});
+
+		})
+
+		socket.on('fileContents', (out: string) => {
+			console.log(`changing eidtor's fileContents to ${out}`)
+			this.setState({
+				"fileContents": out
+			});
+
+			console.log(this.state);
+
+		})
+
+		socket.emit("getBranch");
 	}
 
 	componentWillUnmount() {
 		socket.off('connect');
 		socket.off('disconnect');
-		socket.off('pong');
 		socket.off('clear');
 		socket.off('pull');
 		socket.off('stdout');
 		socket.off('branch');
+		socket.off('fileContents');
+		socket.off('displayBranch');
 	}
 
-	sendPing = () => {
-		console.log("sending ping...")
-		socket.emit('ping');
+	shouldComponentUpdate(nextProps: props, nextState: state) {
+		if (nextState !== this.state) return true;
+		return false;
 	}
 
 
@@ -123,6 +141,18 @@ class App extends Component<props, state> {
 			fn: (args: string) => {
 				socket.emit("branch", args);
 			}
+		},
+		build: {
+			description: 'Build and runs the code on the raspberry pi pico',
+			fn: (args: string) => {
+				socket.emit("build", args);
+			}
+		},
+		edit: {
+			description: 'Alows you to edit a file in the editor',
+			fn: (args: string) => {
+				socket.emit("edit", args);
+			}
 		}
 
 	}
@@ -131,9 +161,9 @@ class App extends Component<props, state> {
 		return (
 			<PullProvider>
 				<div className="flex flex-col">
-					<Navbar socket={socket} terminal={this.terminal.current} />
+					<Navbar socket={socket} terminal={this.terminal.current} branch={this.state.branch} />
 
-					<Editor key={NavbarKey += 1} />
+					<Editor key={NavbarKey += 1} fileContents={this.state.fileContents} />
 
 					<Resizable
 						className="bg-current "
