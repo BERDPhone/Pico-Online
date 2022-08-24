@@ -21,6 +21,10 @@ let io = new Server(server, {
 
 let currentBranch = "main"
 
+if (!fs.existsSync(gitDir)) {
+	fs.mkdirSync(gitDir);
+}
+
 // listening for connections from clients
 io.on('connection', (socket: Socket) =>{
 	console.log("getting connection");
