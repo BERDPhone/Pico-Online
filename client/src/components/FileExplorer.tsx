@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { FaFolder, FaFileCode } from "react-icons/fa";
+import { Socket } from "socket.io-client";
 
 type props = {
 	files?: FileStruct,
 	margin?: string,
 	loading?: boolean,
 	increaseKey: () => number,
+	terminal: any,
+	filepath: string,
+	socket: Socket,
 }
 
 export interface FileStruct {
@@ -15,7 +19,7 @@ export interface FileStruct {
 	children?: FileStruct[],
 }
 
-const FileExplorer = ({ files, margin, loading, increaseKey }: props) => {
+const FileExplorer = ({ files, margin, loading, increaseKey, socket, terminal, filepath }: props) => {
 	const [isExpanded, toggleExpanded] = useState(false);
 
 	let key = increaseKey();
@@ -40,16 +44,37 @@ const FileExplorer = ({ files, margin, loading, increaseKey }: props) => {
 					{
 						isExpanded && files.children.map((item: any) => {
 							return (
-								<FileExplorer margin="ml-5" files={item} key={key += 1} increaseKey={increaseKey} />
+								<FileExplorer 
+									margin="ml-5" 
+									files={item} 
+									key={key += 1} 
+									increaseKey={increaseKey} 
+									terminal={terminal}
+									socket={socket} 
+									filepath={`${filepath}/${item?.name}`} 
+								/>
 							);
 						})
 					}
 				</div>
 			)
 		}
+		let clickFunction = () => {
+			console.log("terminal:", terminal)
+			terminal.current.clearInput();
+			terminal.current.terminalInput.current.value = `edit ${filepath}`;
+			terminal.current.processCommand();
+			terminal.current.scrollToBottom();
+		}
 		return (
 			<>
-				<span className={`text-slate-300 pl-2 pr-3 whitespace-nowrap ${margin}`}><FaFileCode className="inline" /> {files?.name}</span><br />
+				<span 
+					className={`text-slate-300 pl-2 pr-3 whitespace-nowrap cursor-pointer ${margin}`}
+					onClick={clickFunction}
+				>
+					<FaFileCode className="inline" /> {files?.name}
+				</span>
+				<br />
 			</>
 		)
 	}

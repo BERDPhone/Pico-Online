@@ -2,5 +2,6 @@
 	"gitRepository": "https://github.com/BjornTheProgrammer/BDOS.git",
 	"gitBaseDir": "BDOS",
 	"apiUrl": "http://localhost:8000/api",
+	"siteUrl": "https://localhost:3000",
 	"buildTarget": "boot"
 }

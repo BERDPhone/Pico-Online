@@ -3,68 +3,39 @@ import React, { Component } from "react";
 import { FaBars } from "react-icons/fa";
 import LoadButton from "./LoadButton";
 import { PullContext, PullContextConsumer, PullDispatchContextConsumer } from "../context/PullContext";
+import { Socket } from "socket.io-client";
 
 type state = {
 	navbarOpen: boolean,
-	branchLoading: boolean,
-	branches: string[],
 	codeBuilding: boolean,
 };
 
 type props = {
+	socket: Socket,
 	terminal: any,
 };
 
 class Navbar extends Component<props, state> {
 	state = {
 		navbarOpen: false,
-		branchLoading: true,
-		branches: ["main"],
 		codeBuilding: false,
 	}
 
-	static contextType = PullContext;	
-	// static setPulling = React.useContext(PullDispatchContext);
-
-	componentDidMount() {
-		fetch(`${process.env.REACT_APP_SITE_URL}/branch`, {
-			method: 'GET'
-		})
-			.then((response) => response.json())
-			.then((data) => {
-				this.setState({ branches: data });
-			});
-	}
+	static contextType = PullContext;
 
 	render() {
 
 		const buildCode = () => {
-			this.setState({ codeBuilding: true });
-			fetch(`${process.env.REACT_APP_SITE_URL}/build`, {
-				method: 'POST'
-			})
-				.then((response) => response.json())
-				.then((data) => {
-					console.log(data);
-					this.setState({ codeBuilding: false });
-				})
-				.catch(() => {
-					this.setState({ codeBuilding: false });	
-				});
+			this.props.terminal.current.clearInput();
+			this.props.terminal.current.terminalInput.current.value = "build";
+			this.props.terminal.current.processCommand();
 		}
 
 		const pull = (callback: Function) => {
-			callback(true);
-
-			fetch(`${process.env.REACT_APP_SITE_URL}/pull`, {
-				method: 'PATCH'
-			})
-				.then((response) => response.json())
-				.then((data) => {
-					if (data.status === 200) {
-						callback(false);
-					}
-				});
+			console.log("pulling")
+			this.props.terminal.current.clearInput();
+			this.props.terminal.current.terminalInput.current.value = "pull";
+			this.props.terminal.current.processCommand();
 		}
 
 		return (
@@ -101,7 +72,7 @@ class Navbar extends Component<props, state> {
 						>
 							<ul className="flex flex-col lg:flex-row list-none lg:ml-auto">
 								<li className="nav-item">
-									<Dropdown branches={ this.state.branches } key="1" />
+									<Dropdown terminal={this.props.terminal.current} socket={ this.props.socket } key="1" />
 								</li>
 								<li className="nav-item">
 									<div className="px-3 py-2 flex items-center text-xs uppercase font-bold leading-snug text-white hover:opacity-75">
@@ -133,7 +104,7 @@ class Navbar extends Component<props, state> {
 											onClick={() => buildCode()}
 											loading={ this.state.codeBuilding }
 										>
-											Start
+											Build
 										</LoadButton>
 									</div>
 								</li>

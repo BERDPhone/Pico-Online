@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@codemirror/commands": "^6.1.0",
     "@codemirror/lang-lezer": "^6.0.0",
     "@codemirror/lang-markdown": "^6.0.1",
     "@codemirror/language-data": "^6.1.0",
@@ -24,15 +25,15 @@
     "react-dom": "^18.2.0",
     "react-icons": "^4.4.0",
     "react-scripts": "5.0.1",
-    "react-terminal": "^1.2.8",
+    "socket.io-client": "^4.5.1",
     "typescript": "^4.7.4",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "REACT_APP_SITE_URL=\"$(python3 -c \"import sys, json; f = open('../config.json'); print(json.load(f)['apiUrl'])\")\" react-scripts start",
-    "build": "REACT_APP_SITE_URL=\"$(python3 -c \"import sys, json; f = open('../config.json'); print(json.load(f)['apiUrl'])\")\" react-scripts build",
-    "test": "REACT_APP_SITE_URL=\"$(python3 -c \"import sys, json; f = open('../config.json'); print(json.load(f)['apiUrl'])\")\" react-scripts test",
-    "eject": "REACT_APP_SITE_URL=\"$(python3 -c \"import sys, json; f = open('../config.json'); print(json.load(f)['apiUrl'])\")\" react-scripts eject"
+    "start": "REACT_APP_API_URL=\"$(python3 -c \"import sys, json; f = open('../config.json'); print(json.load(f)['apiUrl'])\")\" react-scripts start",
+    "build": "REACT_APP_API_URL=\"$(python3 -c \"import sys, json; f = open('../config.json'); print(json.load(f)['apiUrl'])\")\" react-scripts build",
+    "test": "REACT_APP_API_URL=\"$(python3 -c \"import sys, json; f = open('../config.json'); print(json.load(f)['apiUrl'])\")\" react-scripts test",
+    "eject": "REACT_APP_API_URL=\"$(python3 -c \"import sys, json; f = open('../config.json'); print(json.load(f)['apiUrl'])\")\" react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
