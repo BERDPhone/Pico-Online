@@ -265,7 +265,7 @@ io.on('connection', (socket: Socket) =>{
 	});
 
 	socket.on('build', (params, callback) => {
-		const child = spawn(`cd ${gitDir}/build && cmake .. && make ${config.buildTarget} && openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program src/os/${config.buildTarget}.elf verify reset exit"`, {
+		const child = spawn(`cd ${gitDir}/build && cmake .. && make ${config.buildTarget} && openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program ${config.buildTargetPath}/${config.buildTarget} verify reset exit"`, {
 			shell: true
 		});	
 
