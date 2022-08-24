@@ -182,6 +182,10 @@ io.on('connection', (socket: Socket) =>{
 				.then(() => {
 					socket.emit('stdout', "Successfully pulled " + config.gitBaseDir + " from github");
 					socket.broadcast.emit('stdout', "Successfully pulled " + config.gitBaseDir + " from github");
+
+					socket.emit('pullFinish');
+					socket.broadcast.emit('pullFinish');
+
 				}).catch((err) => {
 					throw err;
 				});

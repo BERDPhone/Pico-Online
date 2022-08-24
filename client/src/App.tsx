@@ -77,6 +77,10 @@ class App extends Component<props, state> {
 			this.terminal.current.scrollToBottom();
 		})
 
+		socket.on('pullFinish', () => {
+			socket.emit("getStructure");
+		})
+
 		socket.emit("getBranch");
 		socket.emit("getStructure");
 	}
@@ -91,6 +95,7 @@ class App extends Component<props, state> {
 		socket.off('displayBranch');
 		socket.off('getBranch')
 		socket.off('getStructure')
+		socket.off('pullFinish');
 	}
 
 	commands = {
@@ -98,7 +103,6 @@ class App extends Component<props, state> {
 			description: 'Does a git pull to update the current repository.',
 			fn: () => {
 				socket.emit("pull");
-				socket.emit("getStructure");
 			}
 		},
 		branch: {
