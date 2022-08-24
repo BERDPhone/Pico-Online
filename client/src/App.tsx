@@ -92,7 +92,7 @@ class App extends Component<props, state> {
 		})
 
 		socket.on('fileContents', (out: string) => {
-			console.log(`changing eidtor's fileContents to ${out}`)
+			console.log(`changing eidtor's fileContents`)
 			this.setState({
 				"fileContents": out
 			});

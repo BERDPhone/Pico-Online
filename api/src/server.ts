@@ -8,12 +8,15 @@ import { Server, Socket } from 'socket.io';
 import { simpleGit, SimpleGit, CleanOptions } from 'simple-git';
 import * as fs from 'fs';
 import { spawn } from 'child_process';
+import * as http from 'http';
 
 const path = require('path');
 const config = require('../../config.json')
 
 const gitDir: string = `${process.cwd()}/${config.gitBaseDir}`;
 const app = express();
+
+const server = http.createServer(app);
 
 app.use(helmet())
 app.use(cors());
@@ -33,9 +36,6 @@ app.use((err: any, req: Request, res: Response, next: NextFunction): void => {
 	console.error(err.stack)
 	res.status(500).send('Something broke!')
 })
-
-const port = process.env.PORT || 8000;
-const server = app.listen(port, () => console.log(`Server listening on port: ${port}`));
 
 let io = new Server(server, {
 	path: "/api/socket",
@@ -196,3 +196,7 @@ io.on('connection', (socket: Socket) =>{
 	})
 })
 
+
+
+const port = process.env.PORT || 8000;
+server.listen(port, () => console.log(`Server listening on port: ${port}`));
