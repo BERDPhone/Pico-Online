@@ -7,50 +7,35 @@ import { Socket } from "socket.io-client";
 
 type state = {
 	navbarOpen: boolean,
-	branchLoading: boolean,
-	branches: string[],
 	codeBuilding: boolean,
 };
 
 type props = {
 	socket: Socket,
 	terminal: any,
-	branch: string,
 };
 
 class Navbar extends Component<props, state> {
 	state = {
 		navbarOpen: false,
-		branchLoading: true,
-		branches: ["main"],
 		codeBuilding: false,
 	}
 
 	static contextType = PullContext;
 
-	componentDidMount() {
-		// fetch(`${process.env.REACT_APP_API_URL}/branch`, {
-		// 	method: 'GET'
-		// })
-		// 	.then((response) => response.json())
-		// 	.then((data) => {
-		// 		this.setState({ branches: data });
-		// 	});
-	}
-
 	render() {
 
 		const buildCode = () => {
-			this.props.terminal.clearInput();
-			this.props.terminal.terminalInput.current.value = "build";
-			this.props.terminal.processCommand();
+			this.props.terminal.current.clearInput();
+			this.props.terminal.current.terminalInput.current.value = "build";
+			this.props.terminal.current.processCommand();
 		}
 
 		const pull = (callback: Function) => {
 			console.log("pulling")
-			this.props.terminal.clearInput();
-			this.props.terminal.terminalInput.current.value = "pull";
-			this.props.terminal.processCommand();
+			this.props.terminal.current.clearInput();
+			this.props.terminal.current.terminalInput.current.value = "pull";
+			this.props.terminal.current.processCommand();
 		}
 
 		return (
@@ -87,7 +72,7 @@ class Navbar extends Component<props, state> {
 						>
 							<ul className="flex flex-col lg:flex-row list-none lg:ml-auto">
 								<li className="nav-item">
-									<Dropdown terminal={this.props.terminal} branches={ this.state.branches } branch={this.props.branch} key="1" />
+									<Dropdown terminal={this.props.terminal.current} socket={ this.props.socket } key="1" />
 								</li>
 								<li className="nav-item">
 									<div className="px-3 py-2 flex items-center text-xs uppercase font-bold leading-snug text-white hover:opacity-75">

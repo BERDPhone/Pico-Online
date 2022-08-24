@@ -220,6 +220,7 @@ io.on('connection', (socket: Socket) =>{
 							allBranches.push(branch.replace("remotes/origin/", ""));
 						}
 					})
+
 					allBranches = allBranches.sort((a, b) => a.localeCompare(b));
 					allBranches.forEach((branch) => {
 						socket.emit('stdout', branch);
@@ -231,6 +232,29 @@ io.on('connection', (socket: Socket) =>{
 				});
 		}
 	})
+
+	socket.on('listBranches', (params, callback) => {
+		simpleGit(gitDir)
+			.branch()
+			.then((branches) => {
+				// remotes/origin/
+				// console.log("branches: ", branches.all)
+				let allBranches: string[] = [];
+				branches.all.forEach(branch => {
+					if (branch.includes("remotes/origin/")) {
+						allBranches.push(branch.replace("remotes/origin/", ""));
+					}
+				})
+
+				allBranches = allBranches.sort((a, b) => a.localeCompare(b));
+				socket.emit('allBranches', allBranches);
+				socket.broadcast.emit('allBranches', allBranches);
+
+			}).catch((err) => {
+				socket.emit('stdout', "Error attempting to branches from the repository");
+				socket.broadcast.emit('stdout', "Error attempting to branches from the repository");
+			});
+	});
 
 	socket.on('build', (params, callback) => {
 		const child = spawn(`cd ${gitDir}/build && cmake .. && make ${config.buildTarget} && openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program src/os/${config.buildTarget}.elf verify reset exit"`, {

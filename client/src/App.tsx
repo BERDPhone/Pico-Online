@@ -24,9 +24,6 @@ type props = {};
 
 type state = {
 	connected: boolean,
-	branch: string,
-	fileContents: string,
-	filestruct: object,
 }
 
 class App extends Component<props, state> {
@@ -34,14 +31,6 @@ class App extends Component<props, state> {
 
 	state = {
 		connected: false,
-		branch: "main",
-		fileContents: "Select file to start editing",
-		filestruct: {
-			"name": "loading",
-			"type": "folder",
-			"children": [],
-			"status": 500,
-		}
 	}
 
 	componentDidMount() {
@@ -88,30 +77,6 @@ class App extends Component<props, state> {
 			this.terminal.current.scrollToBottom();
 		})
 
-		socket.on('displayBranch', (out: string) => {
-			console.log(`changing branch in dropdown to ${out}`)
-			this.setState({
-				"branch": out
-			});
-		})
-
-		socket.on('filestruct', (out: object) => {
-			console.log(`Updating the file structure: ${out}`)
-			this.setState({
-				"filestruct": out
-			});
-		})
-
-		socket.on('fileContents', (out: string) => {
-			console.log(`changing eidtor's fileContents`)
-			this.setState({
-				"fileContents": out
-			});
-
-			console.log(this.state);
-
-		})
-
 		socket.emit("getBranch");
 		socket.emit("getStructure");
 	}
@@ -123,30 +88,24 @@ class App extends Component<props, state> {
 		socket.off('pull');
 		socket.off('stdout');
 		socket.off('branch');
-		socket.off('fileContents');
 		socket.off('displayBranch');
-		socket.off('filestruct');
 		socket.off('getBranch')
 		socket.off('getStructure')
 	}
-
-	shouldComponentUpdate(nextProps: props, nextState: state) {
-		// if (nextState.filestruct !== this.state.filestruct) return true;
-		return true;
-	}
-
 
 	commands = {
 		pull: {
 			description: 'Does a git pull to update the current repository.',
 			fn: () => {
 				socket.emit("pull");
+				socket.emit("getStructure");
 			}
 		},
 		branch: {
 			description: 'Lists all branches if no arguement supplied, switches branch if arguement provided.',
 			fn: (args: string) => {
 				socket.emit("branch", args);
+				socket.emit("getStructure");
 			}
 		},
 		build: {
@@ -164,7 +123,7 @@ class App extends Component<props, state> {
 		structure: {
 			description: 'Updates the file structure in the file manager.',
 			fn: (args: string) => {
-				socket.emit("filestruct");
+				socket.emit("getStructure");
 			}
 		}
 
@@ -174,9 +133,9 @@ class App extends Component<props, state> {
 		return (
 			<PullProvider>
 				<div className="flex flex-col">
-					<Navbar socket={socket} terminal={this.terminal.current} branch={this.state.branch} />
+					<Navbar socket={socket} terminal={this.terminal} />
 
-					<Editor key={NavbarKey += 1} fileContents={this.state.fileContents} fileStruct={this.state.filestruct} />
+					<Editor key={NavbarKey += 1} socket={socket} terminal={this.terminal} />
 
 					<Resizable
 						className="bg-current "
