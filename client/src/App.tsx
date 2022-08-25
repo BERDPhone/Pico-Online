@@ -13,6 +13,7 @@ import Terminal from 'react-console-emulator';
 import constructEcho from 'react-console-emulator/dist/utils/constructEcho';
 import "./App.css";
 import { PullProvider } from './context/PullContext';
+import Toggle from './components/Toggle';
 
 const socket = io(new URL(process.env.REACT_APP_API_URL!).origin, {
 	path: "/api"
@@ -60,6 +61,8 @@ class App extends Component<props, state> {
 			this.terminal.current.scrollToBottom();
 		})
 
+		// socket.on("initPull", ())
+
 		socket.on("stdout", (out) => {
 			this.terminal.current.pushToStdout(out)
 			this.terminal.current.scrollToBottom();
@@ -96,8 +99,8 @@ class App extends Component<props, state> {
 	commands = {
 		pull: {
 			description: 'Does a git pull to update the current repository.',
-			fn: () => {
-				socket.emit("pull");
+			fn: (args: string) => {
+				socket.emit("pull", args);
 			}
 		},
 		branch: {
@@ -124,6 +127,12 @@ class App extends Component<props, state> {
 			fn: (args: string) => {
 				socket.emit("getStructure");
 			}
+		},
+		remote: {
+			description: `Change which remote to use, by 'remote git_repo_url'`,
+			fn: (args: string) => {
+				socket.emit("changeRemote", args);
+			}
 		}
 
 	}
@@ -148,13 +157,14 @@ class App extends Component<props, state> {
 						enable={ { top:true, right:false, bottom:false, left:false, topRight:false, bottomRight:false, bottomLeft:false, topLeft:false } }
 
 					>
-							<Terminal
-								style={{minHeight: "0px"}}
-								className="h-full"
-								promptLabelStyle={{paddingTop: "0px"}}
-								ref={this.terminal} // Assign ref to the terminal here
-								commands={this.commands}
-							/>
+						<Toggle socket={socket} terminal={this.terminal} />
+						<Terminal
+							style={{minHeight: "0px"}}
+							className="h-full"
+							promptLabelStyle={{paddingTop: "0px"}}
+							ref={this.terminal} // Assign ref to the terminal here
+							commands={this.commands}
+						/>
 					</Resizable>
 				</div>
 			</PullProvider>

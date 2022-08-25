@@ -8,7 +8,7 @@ import { SerialPort, SpacePacketParser, ReadlineParser } from 'serialport';
 const path = require('path');
 const config = require('../../config.json')
 
-const gitDir: string = `${process.cwd()}/gitrepo/${config.gitBaseDir}`;
+const gitDir: string = `${process.cwd()}/gitrepo`;
 
 console.log("gitDir:", gitDir);
 
@@ -32,7 +32,7 @@ const serialport = new SerialPort({ path: config.serialPort, baudRate: 115200 })
 const parser = new ReadlineParser()
 serialport.pipe(parser)
 parser.on('data', (data) => {
-	io.emit('stdout', data);
+	io.emit('uart', data);
 })
 
 serialport.on('error', (error) => {
@@ -44,110 +44,118 @@ serialport.on('error', (error) => {
 io.on('connection', (socket: Socket) =>{
 	console.log("getting connection");
 
+	// socket.on('changeRemote', (params, callback) => {
+	// 	config.gitRepository = params;
+	// 	socket.emit('pull')
+	// })
+
 	socket.on('getStructure', (params, callback) => {
 		// socket.emit('stdout', `Updating file structure`);
 		let diretoryTreeToObj = function(dir: string, done: Function) {
-		let results: File[] = [];
+			let results: File[] = [];
 
-		fs.readdir(dir, function(err, list) {
-			if (err)
-				return done(err);
+			fs.readdir(dir, function(err, list) {
+				if (err)
+					return done(err);
 
-			let pending = list.length;
+				let pending = list.length;
 
-			if (!pending)
-				return done(null, {name: path.basename(dir), type: 'folder', children: results});
+				if (!pending)
+					return done(null, {name: path.basename(dir), type: 'folder', children: results});
 
-			list.forEach(function(file) {
-				file = path.resolve(dir, file);
-				fs.stat(file, function(err, stat) {
-					if (stat && stat.isDirectory()) {
-						diretoryTreeToObj(file, function(err: any, res: File[]) {
+				list.forEach(function(file) {
+					file = path.resolve(dir, file);
+					fs.stat(file, function(err, stat) {
+						if (stat && stat.isDirectory()) {
+							diretoryTreeToObj(file, function(err: any, res: File[]) {
+								results.push({
+									name: path.basename(file),
+									type: 'folder',
+									children: res
+								});
+								if (!--pending)
+									done(null, results);
+							});
+						}
+						else {
 							results.push({
-								name: path.basename(file),
-								type: 'folder',
-								children: res
+								type: 'file',
+								name: path.basename(file)
 							});
 							if (!--pending)
 								done(null, results);
-						});
-					}
-					else {
-						results.push({
-							type: 'file',
-							name: path.basename(file)
-						});
-						if (!--pending)
-							done(null, results);
-					}
+						}
+					});
 				});
 			});
-		});
-	};
+		};
 
-	diretoryTreeToObj(gitDir, function(err: any, response: File[]) {
-		try {
-			if(err) {
-				console.error(err);
+		let repo = fs.readdirSync(gitDir);
+		config.gitBaseDir = repo[0];
 
-				socket.emit('stdout', `Failed to get file structure`);
-			} else {
-				// const orderChildren = obj => {
-				// 	obj.children.sort((a, b) => b.type.localeCompare(a.type));
-				// 	if (obj.children.some(o => o.children.length)) {
-				// 		obj.children.forEach(child => orderChildren(child));
-				// 	}
-				// 	return obj;
-				// };
+		diretoryTreeToObj(`${gitDir}/${repo[0]}`, function(err: any, response: File[]) {
+			try {
+				if(err) {
+					console.error(err);
 
-				const sortArray = (array: File[]) => {
-					array.sort((a, b) => a.name.localeCompare(b.name));
-					array.sort((a, b) => b.type.localeCompare(a.type));
-					array.forEach(a => {
-						if (a.children && a.children.length > 0)
-							sortArray(a.children)
-					})
-					return array;
+					socket.emit('stdout', `Failed to get file structure`);
+				} else {
+					// const orderChildren = obj => {
+					// 	obj.children.sort((a, b) => b.type.localeCompare(a.type));
+					// 	if (obj.children.some(o => o.children.length)) {
+					// 		obj.children.forEach(child => orderChildren(child));
+					// 	}
+					// 	return obj;
+					// };
+
+					const sortArray = (array: File[]) => {
+						array.sort((a, b) => a.name.localeCompare(b.name));
+						array.sort((a, b) => b.type.localeCompare(a.type));
+						array.forEach(a => {
+							if (a.children && a.children.length > 0)
+								sortArray(a.children)
+						})
+						return array;
+					}
+
+					response = sortArray(response);
+
+					socket.broadcast.emit('filestruct', {
+						"name": config.gitBaseDir,
+						"type": "folder",
+						"children": response,
+						"status": 200,
+					});
+					socket.emit('filestruct', {
+						"name": config.gitBaseDir,
+						"type": "folder",
+						"children": response,
+						"status": 200,
+					});
 				}
-
-				response = sortArray(response);
+			} catch (erorr) {
 
 				socket.broadcast.emit('filestruct', {
 					"name": config.gitBaseDir,
 					"type": "folder",
-					"children": response,
-					"status": 200,
+					"children": [],
+					"status": 500,
 				});
 				socket.emit('filestruct', {
 					"name": config.gitBaseDir,
 					"type": "folder",
-					"children": response,
-					"status": 200,
+					"children": [],
+					"status": 500,
 				});
+
+				socket.emit('stdout', `Failed to get file structure`);
 			}
-		} catch (erorr) {
-
-			socket.broadcast.emit('filestruct', {
-				"name": config.gitBaseDir,
-				"type": "folder",
-				"children": [],
-				"status": 500,
-			});
-			socket.emit('filestruct', {
-				"name": config.gitBaseDir,
-				"type": "folder",
-				"children": [],
-				"status": 500,
-			});
-
-			socket.emit('stdout', `Failed to get file structure`);
-		}
-	});
+		});
 
 	})
 
 	socket.on('getBranch', (params, callback) => {
-		simpleGit(gitDir)
+		simpleGit(`${gitDir}/${config.gitBaseDir}`)
 			.branch()
 			.then((branches) => {
 				if (branches.current.includes("origin/")) {
@@ -178,6 +186,7 @@ io.on('connection', (socket: Socket) =>{
 		socket.broadcast.emit('pull');
 
 		try {
+
 			if (fs.existsSync(gitDir)) {
 				fs.rmSync(gitDir, { recursive: true });
 			}
@@ -188,13 +197,22 @@ io.on('connection', (socket: Socket) =>{
 				baseDir: gitDir
 			};
 
-			simpleGit(options).clean(CleanOptions.FORCE);
+			// simpleGit(options).clean(CleanOptions.FORCE);
 
-			const remote = config.gitRepository;
+			let remote: string = config.gitRepository;
+
+			if (params) {
+				remote = params;
+				config.gitRepository = remote;
+				// gitDir = ${process.cwd()}/gitrepo/
+			}
 
 			simpleGit(gitDir)
-				.clone(remote, gitDir)
+				.clone(remote)
 				.then(() => {
+					let repo = fs.readdirSync(gitDir);
+					config.gitBaseDir = repo[0];
+
 					socket.emit('stdout', "Successfully pulled " + config.gitBaseDir + " from github");
 					socket.broadcast.emit('stdout', "Successfully pulled " + config.gitBaseDir + " from github");
 
@@ -218,9 +236,11 @@ io.on('connection', (socket: Socket) =>{
 		// broadcasting data to all other connected clients
 		socket.broadcast.emit('branch', params);
 
+		console.log(`${gitDir}/${config.gitBaseDir}`);
+
 		if (params) {
 			// socket.emit('stdout', params);
-			simpleGit(gitDir)
+			simpleGit(`${gitDir}/${config.gitBaseDir}`)
 				.checkout(`remotes/origin/${params}`)
 				.then(() => {
 					socket.emit('stdout', `Successfully changed branch to ${params}`);
@@ -233,7 +253,7 @@ io.on('connection', (socket: Socket) =>{
 					socket.broadcast.emit('stdout', `Error attempting to change to ${params} branch`);
 				});
 		} else {
-			simpleGit(gitDir)
+			simpleGit(`${gitDir}/${config.gitBaseDir}`)
 				.branch()
 				.then((branches) => {
 					// remotes/origin/
@@ -258,7 +278,7 @@ io.on('connection', (socket: Socket) =>{
 	})
 
 	socket.on('listBranches', (params, callback) => {
-		simpleGit(gitDir)
+		simpleGit(`${gitDir}/${config.gitBaseDir}`)
 			.branch()
 			.then((branches) => {
 				// remotes/origin/
@@ -311,7 +331,7 @@ io.on('connection', (socket: Socket) =>{
 
 	socket.on('edit', (params, callback) => {
 		try {
-			const buffer = fs.readFileSync(`${gitDir}/${params}`);
+			const buffer = fs.readFileSync(`${gitDir}/${config.gitBaseDir}/${params}`);
 			const fileContent = buffer.toString();
 
 			socket.emit('stdout', `Displaying file in editor`);
