@@ -34,3 +34,5 @@ cd api && yarn start
 Your web interface to the pico is nearly done. Now just the wiring from the Pico to the Raspberry Pi is needed. This enables the user to build the code remotely, and even get UART communication back!
 
 The diagram below shows how to wire it.
+
+![This is the wiring diagram](resources/images/conection.png?raw=true)
