@@ -32,7 +32,6 @@ class Navbar extends Component<props, state> {
 		}
 
 		const pull = (callback: Function) => {
-			console.log("pulling")
 			this.props.terminal.current.clearInput();
 			this.props.terminal.current.terminalInput.current.value = "pull";
 			this.props.terminal.current.processCommand();

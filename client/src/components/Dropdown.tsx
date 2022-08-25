@@ -22,7 +22,6 @@ class Dropdown extends Component<props, state> {
 
 	componentDidMount() {
 		this.props.socket.on('displayBranch', (out: string) => {
-			console.log(`changing branch in dropdown to ${out}`)
 			this.setState({
 				"branch": out
 			});
@@ -45,7 +44,6 @@ class Dropdown extends Component<props, state> {
 
 	render() {
 		const branchChanged = (event: any, callback: Function) => {
-			console.log(`changing branch to ${event.target.value}`)
 			this.props.terminal.clearInput();
 			this.props.terminal.terminalInput.current.value = `branch ${event.target.value}`;
 			this.props.terminal.processCommand();

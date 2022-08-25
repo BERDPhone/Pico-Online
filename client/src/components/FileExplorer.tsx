@@ -37,30 +37,32 @@ const FileExplorer = ({ files, margin, loading, increaseKey, socket, terminal, f
 		
 	} else {
 		if (files?.type === 'folder' && files.children) {
+			let FileExplorers: any[] = []
+			if (isExpanded) { 
+				console.log("typeof files.children:", typeof files.children, files.children);
+				files.children.forEach((item: any) => {
+					FileExplorers.push(
+						<FileExplorer 
+							margin="ml-5" 
+							files={item} 
+							key={key += 1} 
+							increaseKey={increaseKey} 
+							terminal={terminal}
+							socket={socket} 
+							filepath={`${filepath}/${item?.name}`} 
+						/>
+					);
+				})
+			}
 			return (
 				<div className={margin}>
 					{/*<FaFolder />*/}
 					<span className="folder-title text-white pl-2 pr-3 mt-5 whitespace-nowrap" onClick={() => toggleExpanded(!isExpanded)}><FaFolder className="inline" /> {files.name}</span><br />
-					{
-						isExpanded && files.children.map((item: any) => {
-							return (
-								<FileExplorer 
-									margin="ml-5" 
-									files={item} 
-									key={key += 1} 
-									increaseKey={increaseKey} 
-									terminal={terminal}
-									socket={socket} 
-									filepath={`${filepath}/${item?.name}`} 
-								/>
-							);
-						})
-					}
+					<>{FileExplorers}</>
 				</div>
 			)
 		}
 		let clickFunction = () => {
-			console.log("terminal:", terminal)
 			terminal.current.clearInput();
 			terminal.current.terminalInput.current.value = `edit ${filepath}`;
 			terminal.current.processCommand();

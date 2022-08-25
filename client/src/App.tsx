@@ -35,21 +35,18 @@ class App extends Component<props, state> {
 
 	componentDidMount() {
 		socket.on('connect', () => {
-			console.log("connected");
 			this.setState({
 				connected: true
 			});
 		});
 
 		socket.on('disconnect', () => {
-			console.log("disconnected");
 			this.setState({ 
 				connected: false
 			});
 		});
 
 		socket.on("clear", () => {
-			console.log("recieved clear");
 			this.terminal.current.clearInput();
 			this.terminal.current.terminalInput.current.value = "clear";
 			this.terminal.current.processCommand();
@@ -57,7 +54,6 @@ class App extends Component<props, state> {
 		})
 
 		socket.on("pull", (gitUrl) => {
-			console.log("recieved pull");
 			const commandName = "pull"
 			this.terminal.current.pushToHistory(commandName)
 			this.terminal.current.pushToStdout(constructEcho(this.terminal.current.props.promptLabel || '$', commandName, this.terminal.current.props), { isEcho: true })
@@ -65,7 +61,6 @@ class App extends Component<props, state> {
 		})
 
 		socket.on("stdout", (out) => {
-			console.log("recieving stdout");
 			this.terminal.current.pushToStdout(out)
 			this.terminal.current.scrollToBottom();
 		})
