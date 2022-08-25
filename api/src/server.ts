@@ -303,12 +303,12 @@ io.on('connection', (socket: Socket) =>{
 	socket.on('build', (params, callback) => {
 		let programPath: string;
 		if (config.buildTargetPath != "") {
-			programPath = `${config.buildTargetPath}/${config.buildTarget}`;
+			programPath = `${config.buildTargetPath}/${config.buildTarget}.elf`;
 		} else {
-			programPath = `${config.buildTarget}`;
+			programPath = `${config.buildTarget}.elf`;
 		}
 
-		let child = spawn(`cd ${gitDir}/build && cmake .. && make ${config.buildTarget} && openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program ${programPath} verify reset exit"`, {
+		let child = spawn(`cd ${gitDir}/${config.gitBaseDir}/build && cmake .. && make ${config.buildTarget} && openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program ${programPath} verify reset exit"`, {
 			shell: true
 		});
 
