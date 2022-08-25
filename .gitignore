@@ -128,3 +128,4 @@ dist
 .pnp.*
 .DS_Store
 config.json
+api/gitrepo/*

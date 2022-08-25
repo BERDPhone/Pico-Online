@@ -7,7 +7,9 @@ import * as http from 'http';
 const path = require('path');
 const config = require('../../config.json')
 
-const gitDir: string = `${process.cwd()}/${config.gitBaseDir}`;
+const gitDir: string = `${process.cwd()}/gitrepo/${config.gitBaseDir}`;
+
+console.log("gitDir:", gitDir);
 
 const server = http.createServer();
 
@@ -170,15 +172,15 @@ io.on('connection', (socket: Socket) =>{
 			fs.mkdirSync(gitDir);
 
 			const options = {
-				baseDir: gitDir,
+				baseDir: gitDir
 			};
 
 			simpleGit(options).clean(CleanOptions.FORCE);
 
 			const remote = config.gitRepository;
 
-			simpleGit()
-				.clone(remote)
+			simpleGit(gitDir)
+				.clone(remote, gitDir)
 				.then(() => {
 					socket.emit('stdout', "Successfully pulled " + config.gitBaseDir + " from github");
 					socket.broadcast.emit('stdout', "Successfully pulled " + config.gitBaseDir + " from github");
@@ -191,6 +193,7 @@ io.on('connection', (socket: Socket) =>{
 				});
 
 		} catch (error) {
+			console.error(error);
 			socket.emit('stdout', "Error attempting to pull the repository");
 			socket.broadcast.emit('stdout', "Error attempting to pull the repository");
 		}

@@ -1,8 +1,8 @@
 {
-	"gitRepository": "https://github.com/BERDPhone/BERDOS.git",
-	"gitBaseDir": "BERDOS",
+	"gitRepository": "https://github.com/garyexplains/piccolo_os_v1.1.git",
+	"gitBaseDir": "piccolo_os_v1.1",
 	"apiUrl": "http://192.168.50.202:8000/api",
 	"siteUrl": "http://192.168.50.202:3000",
-	"buildTarget": "boot",
-	"buildTargetPath": "src/os"
+	"buildTarget": "piccolo_os_demo",
+	"buildTargetPath": ""
 }
