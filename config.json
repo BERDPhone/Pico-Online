@@ -1,7 +1,8 @@
 {
 	"gitRepository": "https://github.com/BERDPhone/BERDOS.git",
 	"gitBaseDir": "BERDOS",
-	"apiUrl": "http://0.0.0.0:8000/api",
+	"apiUrl": "http://192.168.50.202:8000/api",
+	"siteUrl": "http://192.168.50.202:3000",
 	"buildTarget": "boot",
 	"buildTargetPath": "src/os"
 }

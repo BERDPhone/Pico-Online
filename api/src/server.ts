@@ -14,7 +14,7 @@ const server = http.createServer();
 let io = new Server(server, {
 	path: "/api",
 	cors: {
-		origin: "*",
+		origin: config.siteUrl,
 		methods: ["GET", "POST"]
 	}
 });
