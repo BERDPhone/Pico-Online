@@ -24,10 +24,6 @@ let io = new Server(server, {
 
 let currentBranch = "main"
 
-if (!fs.existsSync(gitDir)) {
-	fs.mkdirSync(gitDir);
-}
-
 const serialport = new SerialPort({ path: config.serialPort, baudRate: 115200 })
 const parser = new ReadlineParser()
 serialport.pipe(parser)
@@ -38,7 +34,6 @@ parser.on('data', (data) => {
 serialport.on('error', (error) => {
 	console.error(error);
 })
-
 
 // listening for connections from clients
 io.on('connection', (socket: Socket) =>{
@@ -183,7 +178,7 @@ io.on('connection', (socket: Socket) =>{
 		console.log("getting pull")
 
 		// // broadcasting data to all other connected clients
-		socket.broadcast.emit('pull');
+		socket.broadcast.emit('pull', params);
 
 		try {
 
@@ -218,6 +213,8 @@ io.on('connection', (socket: Socket) =>{
 
 					socket.emit('pullFinish');
 					socket.broadcast.emit('pullFinish');
+
+					listBranches();
 
 				}).catch((err) => {
 					throw err;
@@ -277,7 +274,7 @@ io.on('connection', (socket: Socket) =>{
 		}
 	})
 
-	socket.on('listBranches', (params, callback) => {
+	const listBranches = () => {
 		simpleGit(`${gitDir}/${config.gitBaseDir}`)
 			.branch()
 			.then((branches) => {
@@ -298,6 +295,10 @@ io.on('connection', (socket: Socket) =>{
 				socket.emit('stdout', "Error attempting to branches from the repository");
 				socket.broadcast.emit('stdout', "Error attempting to branches from the repository");
 			});
+	}
+
+	socket.on('listBranches', (params, callback) => {
+		listBranches();
 	});
 
 	socket.on('build', (params, callback) => {
@@ -306,6 +307,10 @@ io.on('connection', (socket: Socket) =>{
 			programPath = `${config.buildTargetPath}/${config.buildTarget}.elf`;
 		} else {
 			programPath = `${config.buildTarget}.elf`;
+		}
+
+		if (!fs.existsSync(`${gitDir}/${config.gitBaseDir}/build`)) {
+			fs.mkdirSync(`${gitDir}/${config.gitBaseDir}/build`);
 		}
 
 		let child = spawn(`cd ${gitDir}/${config.gitBaseDir}/build && cmake .. && make ${config.buildTarget} && openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program ${programPath} verify reset exit"`, {
@@ -345,6 +350,19 @@ io.on('connection', (socket: Socket) =>{
 			}
 		}	
 	})
+
+	socket.on('changeTarget', (params, callback) => {
+		params[0] = params[0] ?? "";
+		params[1] = params[1] ?? "";
+		config.buildTarget = params[0];
+		config.buildTargetPath = params[1];
+
+		socket.broadcast.emit('target', params);
+
+		socket.emit('stdout', `Set executable to "${params[0]}" and path to "${params[1]}"`);
+		socket.broadcast.emit('stdout', `Set executable to "${params[0]}" and path to "${params[1]}"`);
+
+	});
 })
 
 
