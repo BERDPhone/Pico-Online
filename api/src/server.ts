@@ -28,7 +28,7 @@ if (!fs.existsSync(gitDir)) {
 	fs.mkdirSync(gitDir);
 }
 
-const serialport = new SerialPort({ path: config.serialport, baudRate: 115200 })
+const serialport = new SerialPort({ path: config.serialPort, baudRate: 115200 })
 const parser = new ReadlineParser()
 serialport.pipe(parser)
 parser.on('data', (data) => {
