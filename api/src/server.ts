@@ -3,6 +3,7 @@ import { simpleGit, SimpleGit, CleanOptions } from 'simple-git';
 import * as fs from 'fs';
 import { spawn } from 'child_process';
 import * as http from 'http';
+import { SerialPort, SpacePacketParser, ReadlineParser } from 'serialport';
 
 const path = require('path');
 const config = require('../../config.json')
@@ -26,6 +27,18 @@ let currentBranch = "main"
 if (!fs.existsSync(gitDir)) {
 	fs.mkdirSync(gitDir);
 }
+
+const serialport = new SerialPort({ path: config.serialport, baudRate: 115200 })
+const parser = new ReadlineParser()
+serialport.pipe(parser)
+parser.on('data', (data) => {
+	io.emit('stdout', data);
+})
+
+serialport.on('error', (error) => {
+	console.error(error);
+})
+
 
 // listening for connections from clients
 io.on('connection', (socket: Socket) =>{
@@ -268,16 +281,16 @@ io.on('connection', (socket: Socket) =>{
 	});
 
 	socket.on('build', (params, callback) => {
-		let child;
+		let programPath: string;
 		if (config.buildTargetPath != "") {
-			child = spawn(`cd ${gitDir}/build && cmake .. && make ${config.buildTarget} && openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program ${config.buildTargetPath}/${config.buildTarget} verify reset exit"`, {
-				shell: true
-			});	
+			programPath = `${config.buildTargetPath}/${config.buildTarget}`;
 		} else {
-			child = spawn(`cd ${gitDir}/build && cmake .. && make ${config.buildTarget} && openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program ${config.buildTarget} verify reset exit"`, {
-				shell: true
-			});	
+			programPath = `${config.buildTarget}`;
 		}
+
+		let child = spawn(`cd ${gitDir}/build && cmake .. && make ${config.buildTarget} && openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program ${programPath} verify reset exit"`, {
+			shell: true
+		});
 
 		child.stderr.on('data', function (data) {
 			socket.emit('stdout', data.toString());

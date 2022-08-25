@@ -4,5 +4,6 @@
 	"apiUrl": "http://192.168.50.202:8000/api",
 	"siteUrl": "http://192.168.50.202:3000",
 	"buildTarget": "piccolo_os_demo",
-	"buildTargetPath": ""
+	"buildTargetPath": "",
+	"serialPort": "/dev/serial0"
 }

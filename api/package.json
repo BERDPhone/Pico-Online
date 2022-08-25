@@ -19,6 +19,7 @@
     "express": "^4.17.1",
     "helmet": "^5.1.1",
     "morgan": "^1.10.0",
+    "serialport": "^10.4.0",
     "simple-git": "^3.11.0",
     "socket.io": "^4.5.1",
     "ts-loader": "^9.2.5",
