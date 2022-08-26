@@ -36,9 +36,9 @@ const FileExplorer = ({ files, margin, loading, increaseKey, socket, terminal, f
 		)
 		
 	} else {
-		if (files?.type === 'folder' && files.children) {
+		if (files?.type === 'folder') {
 			let FileExplorers: any[] = []
-			if (isExpanded) { 
+			if (isExpanded && Array.isArray(files.children)) { 
 				console.log("typeof files.children:", typeof files.children, files.children);
 				files.children.forEach((item: any) => {
 					FileExplorers.push(
