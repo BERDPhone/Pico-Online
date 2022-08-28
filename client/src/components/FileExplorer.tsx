@@ -49,7 +49,7 @@ const FileExplorer = ({ files, margin, loading, increaseKey, socket, terminal, f
 							increaseKey={increaseKey} 
 							terminal={terminal}
 							socket={socket} 
-							filepath={`${filepath}/${item?.name}`} 
+							filepath={`${filepath ? filepath + "/" : ""}${item?.name}`} 
 						/>
 					);
 				})

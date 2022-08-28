@@ -106,7 +106,7 @@ class App extends Component<props, state> {
 
 	commands = {
 		pull: {
-			description: 'Does a git pull to update the current repository.',
+			description: 'Does a git pull to update the current repository. If arguement provided, pulls from the repository',
 			fn: (args: string) => {
 				socket.emit("pull", args);
 			}

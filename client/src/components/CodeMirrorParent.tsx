@@ -16,6 +16,9 @@ type props = {
 
 type state = {
 	fileContents: string,
+	fileFullPath: string,
+	fileRelativePath: string,
+	update: boolean
 }
 
 let fileExplorerKey = 0;
@@ -23,7 +26,10 @@ let fileExplorerKey = 0;
 class CodeMirrorParent extends Component<props, state> {
 
 	state = {
-		fileContents: "Select file to start editing."
+		fileContents: "Select file to start editing.",
+		fileFullPath: "none",
+		fileRelativePath: "none",
+		update: true
 	}
 
 	increaseFileExplorerKey = () => {
@@ -33,13 +39,39 @@ class CodeMirrorParent extends Component<props, state> {
 	componentDidMount() {
 		this.props.socket.on('fileContents', (out: string) => {
 			this.setState({
-				fileContents: out
+				fileContents: out,
+				update: false,
 			})
 		})
+
+		this.props.socket.on('filePath', (full: string, relative: string) => {
+			this.setState({
+				fileFullPath: full,
+				fileRelativePath: relative
+			})
+		})
+
+		this.props.socket.on('fileUpdated', (path: string, doc: string) => {
+			console.log(path, this.state.fileFullPath);
+			// console.log(path, this.state.filePath);
+			if (path === this.state.fileFullPath) {
+				this.setState({ 
+					fileContents: doc
+				});
+			}
+		})
+
+		this.props.socket.on('pullFinish', () => {
+			this.props.socket.emit('updateContents', this.state.fileRelativePath)
+		})
+
 	}
 
 	componentWillUnmount() {
 		this.props.socket.off('fileContents');
+		this.props.socket.off('filePath');
+		this.props.socket.off('fileUpdated');
+		this.props.socket.off('pullFinish');
 	}
 
 	render() {
@@ -133,7 +165,26 @@ class CodeMirrorParent extends Component<props, state> {
 				theme={sublimeLike}
 				height="100%"
 				basicSetup={false}
-				extensions={[indentUnit.of("\t"), breakpointGutter, basicSetup(), langs.c()]}
+				id="codeEditor"
+				extensions={[
+					indentUnit.of("\t"), 
+					breakpointGutter, 
+					basicSetup(), 
+					langs.c(),
+				]}
+				onChange={(value, viewUpdate) => {
+					// console.log(value)
+					// console.log(viewUpdate)
+					if (this.state.update === true) {
+						if (this.state.fileFullPath !== "none") {
+							this.props.socket.emit('docChanged', this.state.fileFullPath, value);
+						}
+					} else {
+						this.setState({
+							update: true
+						})
+					}
+				}}
 				value={this.state.fileContents}
 			/>
 		);

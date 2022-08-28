@@ -44,7 +44,7 @@ io.on('connection', (socket: Socket) =>{
 	// 	socket.emit('pull')
 	// })
 
-	socket.on('getStructure', (params, callback) => {
+	socket.on('getStructure', (params) => {
 		// socket.emit('stdout', `Updating file structure`);
 		let diretoryTreeToObj = function(dir: string, done: Function) {
 			let results: File[] = [];
@@ -149,7 +149,7 @@ io.on('connection', (socket: Socket) =>{
 
 	})
 
-	socket.on('getBranch', (params, callback) => {
+	socket.on('getBranch', (params) => {
 		simpleGit(`${gitDir}/${config.gitBaseDir}`)
 			.branch()
 			.then((branches) => {
@@ -165,7 +165,7 @@ io.on('connection', (socket: Socket) =>{
 			})
 	})
 
-	socket.on('clear', (params, callback) => {
+	socket.on('clear', () => {
 
 		// send data back to client by using emit
 		socket.emit('clear');
@@ -174,7 +174,7 @@ io.on('connection', (socket: Socket) =>{
 		socket.broadcast.emit('clear');
 	})
 
-	socket.on('pull', (params, callback) => {
+	socket.on('pull', (params) => {
 		console.log("getting pull")
 
 		// // broadcasting data to all other connected clients
@@ -227,7 +227,7 @@ io.on('connection', (socket: Socket) =>{
 		}
 	})
 
-	socket.on('branch', (params, callback) => {
+	socket.on('branch', (params) => {
 		console.log("getting pull")
 
 		// broadcasting data to all other connected clients
@@ -297,11 +297,11 @@ io.on('connection', (socket: Socket) =>{
 			});
 	}
 
-	socket.on('listBranches', (params, callback) => {
+	socket.on('listBranches', () => {
 		listBranches();
 	});
 
-	socket.on('build', (params, callback) => {
+	socket.on('build', () => {
 		let programPath: string;
 		if (config.buildTargetPath != "") {
 			programPath = `${config.buildTargetPath}/${config.buildTarget}.elf`;
@@ -334,14 +334,22 @@ io.on('connection', (socket: Socket) =>{
 	
 	})
 
-	socket.on('edit', (params, callback) => {
+	socket.on('edit', (params) => {
 		try {
-			const buffer = fs.readFileSync(`${gitDir}/${config.gitBaseDir}/${params}`);
-			const fileContent = buffer.toString();
+			if (params !== "none") {
+				const filePath = `${gitDir}/${config.gitBaseDir}/${params}`;
+				const buffer = fs.readFileSync(filePath);
+				const fileContent = buffer.toString();
 
-			socket.emit('stdout', `Displaying file in editor`);
+				// socket.emit('stdout', `Displaying file in editor`);
 
-			socket.emit('fileContents', fileContent)
+				socket.emit('fileContents', fileContent)
+				socket.emit('filePath', filePath, params)
+			} else {
+				socket.emit('fileContents', "Select file to start editing.")
+				socket.emit('filePath', "none", "none")
+			}
+
 		} catch (error) {
 			if (params) {
 				socket.emit('stdout', 'Incorrect file path provided');
@@ -351,7 +359,7 @@ io.on('connection', (socket: Socket) =>{
 		}	
 	})
 
-	socket.on('changeTarget', (params, callback) => {
+	socket.on('changeTarget', (params) => {
 		params[0] = params[0] ?? "";
 		params[1] = params[1] ?? "";
 		config.buildTarget = params[0];
@@ -361,8 +369,40 @@ io.on('connection', (socket: Socket) =>{
 
 		socket.emit('stdout', `Set executable to "${params[0]}" and path to "${params[1]}"`);
 		socket.broadcast.emit('stdout', `Set executable to "${params[0]}" and path to "${params[1]}"`);
-
 	});
+
+	socket.on('docChanged', (path, doc) => {
+		fs.writeFile(path, doc, function(err) {
+			if(err) {
+				return console.error(err);
+			}
+
+			socket.broadcast.emit('fileUpdated', path, doc);
+		}); 
+	})
+
+	socket.on('updateContents', (params) => {
+		try {
+			if (params !== "none") {
+				const filePath = `${gitDir}/${config.gitBaseDir}/${params}`;
+				const buffer = fs.readFileSync(filePath);
+				const fileContent = buffer.toString();
+
+				// socket.emit('stdout', `Displaying file in editor`);
+
+				socket.emit('fileUpdated', params, fileContent)
+			} else {
+				socket.emit('fileUpdated', "Select file to start editing.")
+			}
+
+		} catch (error) {
+			if (params) {
+				socket.emit('stdout', 'Incorrect file path provided');
+			} else {
+				socket.emit('stdout', 'No file path provided');
+			}
+		}	
+	})
 })
 
 
