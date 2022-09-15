@@ -10,6 +10,13 @@ import { createTheme } from '@uiw/codemirror-themes'
 import { tags as t } from '@lezer/highlight';
 import { indentUnit } from '@codemirror/language'
 
+import * as Y from 'yjs'
+// @ts-ignore
+import { yCollab } from 'y-codemirror.next'
+import { WebrtcProvider } from 'y-webrtc'
+import * as random from 'lib0/random'
+
+
 type props = {
 	socket: Socket
 }
@@ -22,6 +29,20 @@ type state = {
 }
 
 let fileExplorerKey = 0;
+
+const usercolors = [
+	{ color: '#30bced', light: '#30bced33' },
+	{ color: '#6eeb83', light: '#6eeb8333' },
+	{ color: '#ffbc42', light: '#ffbc4233' },
+	{ color: '#ecd444', light: '#ecd44433' },
+	{ color: '#ee6352', light: '#ee635233' },
+	{ color: '#9ac2c9', light: '#9ac2c933' },
+	{ color: '#8acb88', light: '#8acb8833' },
+	{ color: '#1be7ff', light: '#1be7ff33' }
+]
+
+// select a random color for this user
+const userColor = usercolors[random.uint32() % usercolors.length]
 
 class CodeMirrorParent extends Component<props, state> {
 
@@ -36,7 +57,12 @@ class CodeMirrorParent extends Component<props, state> {
 		return fileExplorerKey +=1;
 	}
 
+	ydoc!: Y.Doc;
+	provider!: WebrtcProvider; 
+	ytext!: Y.Text;
+
 	componentDidMount() {
+		console.log("mounting")
 		this.props.socket.on('fileContents', (out: string) => {
 			this.setState({
 				fileContents: out,
@@ -51,27 +77,25 @@ class CodeMirrorParent extends Component<props, state> {
 			})
 		})
 
-		this.props.socket.on('fileUpdated', (path: string, doc: string) => {
-			console.log(path, this.state.fileFullPath);
-			// console.log(path, this.state.filePath);
-			if (path === this.state.fileFullPath) {
-				this.setState({ 
-					fileContents: doc
-				});
-			}
-		})
 
-		this.props.socket.on('pullFinish', () => {
-			this.props.socket.emit('updateContents', this.state.fileRelativePath)
+		this.ydoc = new Y.Doc()
+		this.provider = new WebrtcProvider(this.state.fileFullPath, this.ydoc)
+		this.ytext = this.ydoc.getText('codemirror')
+
+		this.provider.awareness.setLocalStateField('user', {
+			name: 'Anonymous ' + Math.floor(Math.random() * 100),
+			color: userColor.color,
+			colorLight: userColor.light
 		})
 
 	}
 
 	componentWillUnmount() {
+		console.log("unmounting")
 		this.props.socket.off('fileContents');
 		this.props.socket.off('filePath');
-		this.props.socket.off('fileUpdated');
-		this.props.socket.off('pullFinish');
+		this.provider.disconnect();
+		this.ydoc.destroy();
 	}
 
 	render() {
@@ -159,35 +183,27 @@ class CodeMirrorParent extends Component<props, state> {
 
 		this.increaseFileExplorerKey();
 
-		return (
-			<CodeMirror
-				className="flex-1 overflow-scroll"
-				theme={sublimeLike}
-				height="100%"
-				basicSetup={false}
-				id="codeEditor"
-				extensions={[
-					indentUnit.of("\t"), 
-					breakpointGutter, 
-					basicSetup(), 
-					langs.c(),
-				]}
-				onChange={(value, viewUpdate) => {
-					// console.log(value)
-					// console.log(viewUpdate)
-					if (this.state.update === true) {
-						if (this.state.fileFullPath !== "none") {
-							this.props.socket.emit('docChanged', this.state.fileFullPath, value);
-						}
-					} else {
-						this.setState({
-							update: true
-						})
-					}
-				}}
-				value={this.state.fileContents}
-			/>
-		);
+		if (this.ytext) {
+			const undoManager = new Y.UndoManager(this.ytext)
+
+			return (
+				<CodeMirror
+					className="flex-1 overflow-scroll"
+					theme={sublimeLike}
+					height="100%"
+					basicSetup={false}
+					id="codeEditor"
+					extensions={[
+						indentUnit.of("\t"), 
+						breakpointGutter, 
+						basicSetup(), 
+						langs.c(),
+						yCollab(this.ytext, this.provider.awareness, { undoManager })
+					]}
+					value={this.ytext.toString()}
+				/>
+			);
+		}
 	}
 }
 

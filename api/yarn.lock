@@ -2,6 +2,18 @@
 # yarn lockfile v1
 
 
+"@codemirror/collab@^6.0.0":
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/@codemirror/collab/-/collab-6.0.0.tgz#19351921101b365604960a557df3f3265c66cfed"
+  integrity sha512-3/OIW8wswOr1t+IKmhwhWj1Mnx5NtwEkW8BFa2i1+lvnVId5dGGQFosp2IPin1oCym1Gn/dEbweXtGrIiJNkwA==
+  dependencies:
+    "@codemirror/state" "^6.0.0"
+
+"@codemirror/state@^6.0.0", "@codemirror/state@^6.1.1":
+  version "6.1.1"
+  resolved "https://registry.yarnpkg.com/@codemirror/state/-/state-6.1.1.tgz#4f512e5e34ea23a5e10b2c1fe43f6195e90417bb"
+  integrity sha512-2s+aXsxmAwnR3Rd+JDHPG/1lw0YsA9PEwl7Re88gHJHGfxyfEzKBmsN4rr53RyPIR4lzbbhJX0DCq0WlqlBIRw==
+
 "@discoveryjs/json-ext@^0.5.0":
   version "0.5.7"
   resolved "https://registry.yarnpkg.com/@discoveryjs/json-ext/-/json-ext-0.5.7.tgz#1d572bfbbe14b7704e0ba0f39b74815b84870d70"

@@ -4,6 +4,9 @@ import * as fs from 'fs';
 import { spawn } from 'child_process';
 import * as http from 'http';
 import { SerialPort, SpacePacketParser, ReadlineParser } from 'serialport';
+import {ChangeSet, Text} from "@codemirror/state"
+import {Update} from "@codemirror/collab"
+
 
 const path = require('path');
 const config = require('../../config.json')
@@ -275,26 +278,30 @@ io.on('connection', (socket: Socket) =>{
 	})
 
 	const listBranches = () => {
-		simpleGit(`${gitDir}/${config.gitBaseDir}`)
-			.branch()
-			.then((branches) => {
-				// remotes/origin/
-				// console.log("branches: ", branches.all)
-				let allBranches: string[] = [];
-				branches.all.forEach(branch => {
-					if (branch.includes("remotes/origin/")) {
-						allBranches.push(branch.replace("remotes/origin/", ""));
-					}
-				})
+		try {
+			simpleGit(`${gitDir}/${config.gitBaseDir}`)
+				.branch()
+				.then((branches) => {
+					// remotes/origin/
+					// console.log("branches: ", branches.all)
+					let allBranches: string[] = [];
+					branches.all.forEach(branch => {
+						if (branch.includes("remotes/origin/")) {
+							allBranches.push(branch.replace("remotes/origin/", ""));
+						}
+					})
 
-				allBranches = allBranches.sort((a, b) => a.localeCompare(b));
-				socket.emit('allBranches', allBranches);
-				socket.broadcast.emit('allBranches', allBranches);
+					allBranches = allBranches.sort((a, b) => a.localeCompare(b));
+					socket.emit('allBranches', allBranches);
+					socket.broadcast.emit('allBranches', allBranches);
 
-			}).catch((err) => {
-				socket.emit('stdout', "Error attempting to branches from the repository");
-				socket.broadcast.emit('stdout', "Error attempting to branches from the repository");
-			});
+				}).catch((err) => {
+					socket.emit('stdout', "Error attempting to branches from the repository");
+					socket.broadcast.emit('stdout', "Error attempting to branches from the repository");
+				});
+		} catch (error) {
+			console.error(error);
+		}
 	}
 
 	socket.on('listBranches', () => {
@@ -370,39 +377,6 @@ io.on('connection', (socket: Socket) =>{
 		socket.emit('stdout', `Set executable to "${params[0]}" and path to "${params[1]}"`);
 		socket.broadcast.emit('stdout', `Set executable to "${params[0]}" and path to "${params[1]}"`);
 	});
-
-	socket.on('docChanged', (path, doc) => {
-		fs.writeFile(path, doc, function(err) {
-			if(err) {
-				return console.error(err);
-			}
-
-			socket.broadcast.emit('fileUpdated', path, doc);
-		}); 
-	})
-
-	socket.on('updateContents', (params) => {
-		try {
-			if (params !== "none") {
-				const filePath = `${gitDir}/${config.gitBaseDir}/${params}`;
-				const buffer = fs.readFileSync(filePath);
-				const fileContent = buffer.toString();
-
-				// socket.emit('stdout', `Displaying file in editor`);
-
-				socket.emit('fileUpdated', params, fileContent)
-			} else {
-				socket.emit('fileUpdated', "Select file to start editing.")
-			}
-
-		} catch (error) {
-			if (params) {
-				socket.emit('stdout', 'Incorrect file path provided');
-			} else {
-				socket.emit('stdout', 'No file path provided');
-			}
-		}	
-	})
 })
 
 
