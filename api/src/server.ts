@@ -203,7 +203,7 @@ io.on('connection', (socket: Socket) =>{
 			}
 
 			simpleGit(gitDir)
-				.clone(remote)
+				.clone(remote, { '--recurse-submodules': null })
 				.then(() => {
 					let repo = fs.readdirSync(gitDir);
 					config.gitBaseDir = repo[0];
@@ -239,6 +239,8 @@ io.on('connection', (socket: Socket) =>{
 			// socket.emit('stdout', params);
 			simpleGit(`${gitDir}/${config.gitBaseDir}`)
 				.checkout(`remotes/origin/${params}`)
+				.submoduleInit()
+				.submoduleUpdate()
 				.then(() => {
 					socket.emit('stdout', `Successfully changed branch to ${params}`);
 					socket.broadcast.emit('stdout', `Successfully changed branch to ${params}`);
