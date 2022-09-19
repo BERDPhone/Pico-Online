@@ -16,6 +16,7 @@ type props = {
 
 type state = {
 	fileContents: string,
+	filePath: string
 }
 
 let fileExplorerKey = 0;
@@ -23,7 +24,8 @@ let fileExplorerKey = 0;
 class CodeMirrorParent extends Component<props, state> {
 
 	state = {
-		fileContents: "Select file to start editing."
+		fileContents: "Select file to start editing.",
+		filePath: "none"
 	}
 
 	increaseFileExplorerKey = () => {
@@ -31,9 +33,10 @@ class CodeMirrorParent extends Component<props, state> {
 	}
 
 	componentDidMount() {
-		this.props.socket.on('fileContents', (out: string) => {
+		this.props.socket.on('fileContents', (out: string, path: string) => {
 			this.setState({
-				fileContents: out
+				fileContents: out,
+				filePath: path
 			})
 		})
 	}
@@ -125,6 +128,10 @@ class CodeMirrorParent extends Component<props, state> {
 			],
 		});
 
+		const onChange = (value: any) => {
+
+		}
+
 		this.increaseFileExplorerKey();
 
 		return (
@@ -135,6 +142,10 @@ class CodeMirrorParent extends Component<props, state> {
 				basicSetup={false}
 				extensions={[indentUnit.of("\t"), breakpointGutter, basicSetup(), langs.c()]}
 				value={this.state.fileContents}
+				onChange={(value, viewUpdate) => {
+					console.log(value)
+					this.props.socket.emit('save', this.state.filePath, value);
+				}}
 			/>
 		);
 	}

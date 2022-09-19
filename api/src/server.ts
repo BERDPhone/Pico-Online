@@ -343,7 +343,7 @@ io.on('connection', (socket: Socket) =>{
 
 			socket.emit('stdout', `Displaying file in editor`);
 
-			socket.emit('fileContents', fileContent)
+			socket.emit('fileContents', fileContent, `${gitDir}/${config.gitBaseDir}/${params}`)
 		} catch (error) {
 			if (params) {
 				socket.emit('stdout', 'Incorrect file path provided');
@@ -364,6 +364,14 @@ io.on('connection', (socket: Socket) =>{
 		socket.emit('stdout', `Set executable to "${params[0]}" and path to "${params[1]}"`);
 		socket.broadcast.emit('stdout', `Set executable to "${params[0]}" and path to "${params[1]}"`);
 
+	});
+
+	socket.on('save', (path, value) => {
+		if (path !== "none" && fs.existsSync(path)) {
+			fs.writeFile(path, value, (err) => {
+				console.error(err);
+			});
+		}
 	});
 })
 
