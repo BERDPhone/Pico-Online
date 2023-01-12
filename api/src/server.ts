@@ -4,6 +4,8 @@ import * as fs from 'fs';
 import { spawn } from 'child_process';
 import * as http from 'http';
 import { SerialPort, SpacePacketParser, ReadlineParser } from 'serialport';
+import { ChangeSet, Text } from "@codemirror/state"
+import { Update } from "@codemirror/collab"
 
 const path = require('path');
 const config = require('../../config.json')
@@ -13,6 +15,13 @@ const gitDir: string = `${process.cwd()}/gitrepo`;
 console.log("gitDir:", gitDir);
 
 const server = http.createServer();
+
+// The updates received so far (updates.length gives the current
+// version)
+let updates: Update[] = []
+// The current document
+let doc = Text.of(["Start document"])
+let pending: ((value: any) => void)[] = []
 
 let io = new Server(server, {
 	path: "/api",
@@ -43,6 +52,41 @@ io.on('connection', (socket: Socket) =>{
 	// 	config.gitRepository = params;
 	// 	socket.emit('pull')
 	// })
+	
+	socket.on('pullUpdates', (version: number) => {
+		if (version < updates.length) {
+			socket.emit("pullUpdateResponse", JSON.stringify(updates.slice(version)))
+		} else {
+			pending.push((updates) => { socket.emit('pullUpdateResponse', JSON.stringify(updates.slice(version))) });
+		}
+	})
+
+	socket.on('pushUpdates', (version, docUpdates) => {
+		docUpdates = JSON.parse(docUpdates);
+
+		try {
+			if (version != updates.length) {
+				socket.emit('pushUpdateResponse', false);
+			} else {
+				for (let update of docUpdates) {
+					// Convert the JSON representation to an actual ChangeSet
+					// instance
+					let changes = ChangeSet.fromJSON(update.changes)
+					updates.push({changes, clientID: update.clientID})
+					doc = changes.apply(doc)
+				}
+				socket.emit('pushUpdateResponse', true);
+
+				while (pending.length) pending.pop()!(updates)
+			}
+		} catch (error) {
+			console.error(error)
+		}
+	})
+
+	socket.on('getDocument', () => {
+		socket.emit('getDocumentResponse', updates.length, doc.toString());
+	})
 
 	socket.on('getStructure', (params, callback) => {
 		// socket.emit('stdout', `Updating file structure`);
