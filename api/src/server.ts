@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { spawn } from 'child_process';
 import * as http from 'http';
 import { SerialPort, SpacePacketParser, ReadlineParser } from 'serialport';
-import { ChangeSet, Text } from "@codemirror/state"
+import { ChangeSet, Text, EditorSelection, SelectionRange, Line } from "@codemirror/state"
 import { Update } from "@codemirror/collab"
 
 const path = require('path');
@@ -18,10 +18,16 @@ const server = http.createServer();
 
 // The updates received so far (updates.length gives the current
 // version)
-let updates: Update[] = []
+let updates: Update[] = [];
 // The current document
-let doc = Text.of(["Start document"])
-let pending: ((value: any) => void)[] = []
+let doc = Text.of(["Start document"]);
+let pending: ((value: any) => void)[] = [];
+let cursors = new Map<string, selection>();
+
+interface selection {
+	from: number,
+	to: number
+}
 
 let io = new Server(server, {
 	path: "/api",
@@ -52,7 +58,7 @@ io.on('connection', (socket: Socket) =>{
 	// 	config.gitRepository = params;
 	// 	socket.emit('pull')
 	// })
-	
+
 	socket.on('pullUpdates', (version: number) => {
 		if (version < updates.length) {
 			socket.emit("pullUpdateResponse", JSON.stringify(updates.slice(version)))
@@ -72,7 +78,7 @@ io.on('connection', (socket: Socket) =>{
 					// Convert the JSON representation to an actual ChangeSet
 					// instance
 					let changes = ChangeSet.fromJSON(update.changes)
-					updates.push({changes, clientID: update.clientID})
+					updates.push({ changes, clientID: update.clientID, effects: update.effects })
 					doc = changes.apply(doc)
 				}
 				socket.emit('pushUpdateResponse', true);
@@ -86,6 +92,13 @@ io.on('connection', (socket: Socket) =>{
 
 	socket.on('getDocument', () => {
 		socket.emit('getDocumentResponse', updates.length, doc.toString());
+	})
+
+	socket.on('moveCursor', (version: number, from: number, to: number) => {
+		if (version == updates.length) {
+			cursors.set(socket.id, { from, to });
+			socket.broadcast.emit('cursorUpdate', Object.fromEntries(cursors), updates.length);
+		}
 	})
 
 	socket.on('getStructure', (params, callback) => {
@@ -408,6 +421,10 @@ io.on('connection', (socket: Socket) =>{
 		socket.emit('stdout', `Set executable to "${params[0]}" and path to "${params[1]}"`);
 		socket.broadcast.emit('stdout', `Set executable to "${params[0]}" and path to "${params[1]}"`);
 
+	});
+
+	socket.on("disconnect", (reason) => {
+		cursors.delete(socket.id);
 	});
 })
 

@@ -3,13 +3,14 @@ import { Socket } from "socket.io-client";
 
 import CodeMirror from '@uiw/react-codemirror';
 import { langs } from '@uiw/codemirror-extensions-langs';
-import {EditorView, gutter, GutterMarker, ViewPlugin, ViewUpdate} from "@codemirror/view"
-import {StateField, StateEffect, RangeSet, EditorState, Text, ChangeSet} from "@codemirror/state"
-import {Update, receiveUpdates, sendableUpdates, collab, getSyncedVersion} from "@codemirror/collab"
+import { EditorView, gutter, GutterMarker, ViewPlugin, ViewUpdate, Decoration, DecorationSet, Tooltip, showTooltip } from "@codemirror/view"
+import { StateField, StateEffect, RangeSet, EditorState, Text, ChangeSet, EditorSelection, Extension, StateEffectType } from "@codemirror/state"
+import { Update, receiveUpdates, sendableUpdates, collab, getSyncedVersion } from "@codemirror/collab"
 import { basicSetup } from '@uiw/codemirror-extensions-basic-setup';
 import { createTheme } from '@uiw/codemirror-themes'
 import { tags as t } from '@lezer/highlight';
 import { indentUnit } from '@codemirror/language'
+import { markdown } from "@codemirror/lang-markdown";
 
 type props = {
 	socket: Socket
@@ -19,7 +20,18 @@ type state = {
 	connected: boolean,
 	version: number | null,
 	doc: String | null,
-	fileContents: string
+	fileContents: string,
+	cursors: Map<string, selection>
+}
+
+interface selection {
+	from: number,
+	to: number
+}
+
+interface Cursor {
+	from: number,
+	to: number
 }
 
 let fileExplorerKey = 0;
@@ -30,7 +42,8 @@ class CodeMirrorParent extends Component<props, state> {
 		fileContents: "Select file to start editing.",
 		connected: false,
 		version: null,
-		doc: null
+		doc: null,
+		cursors: new Map()
 	}
 
 	increaseFileExplorerKey = () => {
@@ -62,6 +75,14 @@ class CodeMirrorParent extends Component<props, state> {
 				connected: false
 			});
 		});
+
+		this.props.socket.on('cursorUpdate', (cursors, version) => {
+			if (version == this.state.version) {
+				this.setState({
+					cursors: new Map(Object.entries(cursors))
+				});
+			}
+		});
 	}
 
 	componentWillUnmount() {
@@ -78,7 +99,8 @@ class CodeMirrorParent extends Component<props, state> {
 		// Strip off transaction data
 		let updates = fullUpdates.map(u => ({
 			clientID: u.clientID,
-			changes: u.changes.toJSON()
+			changes: u.changes.toJSON(),
+			effects: u.effects
 		}))
 
 		const socket = this.props.socket;
@@ -103,10 +125,22 @@ class CodeMirrorParent extends Component<props, state> {
 			socket.once('pullUpdateResponse', function(updates: any) {
 				resolve(JSON.parse(updates));
 			});
-		}).then((updates: any) => updates.map((u: any) => ({
-			changes: ChangeSet.fromJSON(u.changes),
-			clientID: u.clientID
-		})));
+		}).then((updates: any) => updates.map((u: any) => {
+			if (u.effects[0]?.value?.from) {
+				let effects = this.markRegion.of({from: u.effects[0]?.value.from, to: u.effects[0]?.value.to})
+
+				return {
+					changes: ChangeSet.fromJSON(u.changes),
+					clientID: u.clientID,
+					effects: effects
+				}
+			}
+			
+			return {
+				changes: ChangeSet.fromJSON(u.changes),
+				clientID: u.clientID
+			}
+		}));
 	}
 
 	getDocument(): Promise<{version: number, doc: Text}> {
@@ -124,50 +158,127 @@ class CodeMirrorParent extends Component<props, state> {
 		});
 	}
 
-	peerExtension(startVersion: number) {
-		let self = this;
-
-		let plugin = ViewPlugin.fromClass(class {
-			private pushing = false
-			private done = false
-
-			constructor(private view: EditorView) { this.pull() }
-
-			update(update: ViewUpdate) {
-				if (update.docChanged) this.push()
-			}
-
-			async push() {
-				let updates = sendableUpdates(this.view.state)
-				if (this.pushing || !updates.length) return
-				this.pushing = true
-				let version = getSyncedVersion(this.view.state)
-				let success = await self.pushUpdates(version, updates)
-				this.pushing = false
-				// Regardless of whether the push failed or new updates came in
-				// while it was running, try again if there's updates remaining
-				if (sendableUpdates(this.view.state).length)
-					setTimeout(() => this.push(), 100)
-			}
-
-			async pull() {
-				while (!this.done) {
-					let version = getSyncedVersion(this.view.state)
-					let updates = await self.pullUpdates(version)
-					this.view.dispatch(receiveUpdates(this.view.state, updates))
-				}
-			}
-
-			destroy() { this.done = true }
-		})
-		return [collab({startVersion}), plugin]
-	}
+	markRegion = StateEffect.define<Cursor>({
+		map({from, to}, changes) {
+			from = changes.mapPos(from, 1)
+			to = changes.mapPos(to, -1)
+			return from < to ? {from, to} : undefined
+		}
+	})
 
 	render() {
+		let self = this;
+
+		const peerExtension = (startVersion: number) => {
+			let plugin = ViewPlugin.fromClass(class {
+				private pushing = false
+				private done = false
+
+				constructor(private view: EditorView) { this.pull() }
+
+				update(update: ViewUpdate) {
+					if (update.docChanged || update.transactions[0]?.effects[0]) this.push()
+				}
+
+				async push() {
+					let updates = sendableUpdates(this.view.state);
+					if (this.pushing || !updates.length) return;
+					this.pushing = true;
+					let version = getSyncedVersion(this.view.state);
+					let success = await self.pushUpdates(version, updates);
+					this.pushing = false;
+					// Regardless of whether the push failed or new updates came in
+					// while it was running, try again if there's updates remaining
+					if (sendableUpdates(this.view.state).length)
+						setTimeout(() => this.push(), 100);
+				}
+
+				async pull() {
+					while (!this.done) {
+						let version = getSyncedVersion(this.view.state)
+						let updates = await self.pullUpdates(version)
+						let newUpdates = receiveUpdates(this.view.state, updates)
+						this.view.dispatch(newUpdates)
+					}
+				}
+
+				destroy() { this.done = true }
+			})
+
+			return [
+				collab({
+					startVersion,
+					sharedEffects: tr => {
+						const effects = tr.effects.filter(e => {
+							return e.is(this.markRegion)
+						})
+
+						return effects;
+					}
+				}),
+				plugin
+			]
+		}
+
+		const getCursorTooltips = (effects: readonly StateEffect<any>[]): Tooltip[] => {
+			let tooltips: Tooltip[] = [];
+
+			effects.forEach((effect) => {
+				if (!effect.is(this.markRegion)) return;
+
+				tooltips.push(
+					{
+						pos: effect.value.to,
+						above: true,
+						strictSide: true,
+						arrow: true,
+						create: () => {
+							let dom = document.createElement("div")
+							dom.className = "cm-tooltip-cursor"
+							dom.textContent = "Jimmy"
+							return {dom}
+						}
+					}
+				)
+			})
+
+			tooltips.push()
+
+			return tooltips
+		}
+
+		const cursorTooltipField = StateField.define<Tooltip[]>({
+			create: () => ([]),
+
+			update(tooltips, tr) {
+				const containsEffects = tr.effects?.length;
+				if (!(tr.docChanged || tr.selection || containsEffects)) return tooltips;
+				return getCursorTooltips(tr.effects)
+			},
+
+			provide: f => showTooltip.computeN([f], state => state.field(f))
+		})
+
+		const cursorTooltipBaseTheme = EditorView.baseTheme({
+			".cm-tooltip.cm-tooltip-cursor": {
+				backgroundColor: "#66b",
+				color: "white",
+				border: "none",
+				padding: "2px 7px",
+				borderRadius: "4px",
+				"& .cm-tooltip-arrow:before": {
+					borderTopColor: "#66b"
+				},
+				"& .cm-tooltip-arrow:after": {
+					borderTopColor: "transparent"
+				}
+			}
+		})
 
 		const breakpointEffect = StateEffect.define<{pos: number, on: boolean}>({
 			map: (val, mapping) => ({pos: mapping.mapPos(val.pos), on: val.on})
 		})
+
 
 		const breakpointState = StateField.define<RangeSet<GutterMarker>>({
 			create() { return RangeSet.empty },
@@ -261,7 +372,18 @@ class CodeMirrorParent extends Component<props, state> {
 							breakpointGutter,
 							basicSetup(), 
 							langs.c(),
-							this.peerExtension(this.state.version)
+							peerExtension(this.state.version),
+							EditorView.updateListener.of(update => {
+								console.log("update:", update);
+								update.transactions.forEach(e => { 
+									if (e.selection) {
+										update.view.dispatch({
+											effects: this.markRegion.of({from: e.selection.ranges[0].from, to: e.selection.ranges[0].to})
+										})
+									}
+								})
+							}),
+							[cursorTooltipField, cursorTooltipBaseTheme]
 						]}
 						value={this.state.doc}
 					/>
