@@ -53,7 +53,7 @@ const cursorField = StateField.define<DecorationSet>({
 		let cursorTransacions = cursors.map(tr.changes)
 		for (let e of tr.effects) if (e.is(addCursor)) {
 			let addUpdates = [];
-			cursorsItems.set(e.value.id, cursorsItems.size);
+			if (!cursorsItems.has(e.value.id)) cursorsItems.set(e.value.id, cursorsItems.size);
 
 			if (e.value.from != e.value.to) {
 				addUpdates.push(Decoration.mark({
