@@ -1,5 +1,6 @@
 import { EditorView, ViewPlugin, Decoration, DecorationSet, WidgetType } from "@codemirror/view"
 import { StateField, StateEffect } from "@codemirror/state"
+import { getClientID } from "@codemirror/collab"
 
 export interface cursor {
 	id: string,
@@ -11,21 +12,28 @@ export interface Cursors {
 	cursors: cursor[]
 }
 
-let clientId = "-1";
+let clientId = "";
 
 class TooltipWidget extends WidgetType {
-	constructor() { super() }
+	private name: string = "John";
+	private suffix: string = "1";
+
+	constructor(name: string, suffix: string) {
+		super();
+		this.suffix = suffix;
+		this.name = name;
+	}
 
 	toDOM() {
 		let dom = document.createElement("div");
 		dom.className = "cm-tooltip-none";
 
 		let cursor_tooltip = document.createElement("div");
-		cursor_tooltip.className = "cm-tooltip-cursor cm-tooltip cm-tooltip-above"
-		cursor_tooltip.textContent = "Jimmy"
+		cursor_tooltip.className = `cm-tooltip-cursor cm-tooltip cm-tooltip-above cm-tooltip-${this.suffix}`;
+		cursor_tooltip.textContent = this.name;
 
 		let cursor_tooltip_arrow = document.createElement("div");
-		cursor_tooltip_arrow.className = "cm-tooltip-arrow"
+		cursor_tooltip_arrow.className = "cm-tooltip-arrow";
 
 		cursor_tooltip.appendChild(cursor_tooltip_arrow);
 		dom.appendChild(cursor_tooltip);
@@ -34,10 +42,6 @@ class TooltipWidget extends WidgetType {
 
 	ignoreEvent() { return false }
 }
-
-const highlight = Decoration.mark({
-	class: "cm-highlight",
-})
 
 export const addCursor = StateEffect.define<cursor>();
 export const removeCursor = StateEffect.define<String>();
@@ -51,27 +55,28 @@ const cursorField = StateField.define<DecorationSet>({
 		for (let e of tr.effects) if (e.is(addCursor)) {
 			let addUpdates = [];
 
+			if (!clientId) clientId = getClientID(tr.startState)
+
 			if (e.value.from != e.value.to) {
-				addUpdates.push(highlight.range(e.value.from, e.value.to));
+				addUpdates.push(Decoration.mark({
+					class: "cm-highlight-1",
+					id: e.value.id
+				}).range(e.value.from, e.value.to));
 			}
 
 			addUpdates.push(
 				Decoration.widget({
-					widget: new TooltipWidget(),
+					widget: new TooltipWidget(clientId, "1"),
 					block: false,
 					side: -1,
-					id: clientId
+					id: e.value.id
 				}).range(e.value.to, e.value.to)
 			);
 
 			cursorTransacions = cursorTransacions.update({
-				add: addUpdates
-			})
-		} else if (e.is(removeCursor)) {
-			cursorTransacions = cursorTransacions.update({
+				add: addUpdates,
 				filter: (from, to, value ) => {
-					console.log(value)
-					if (value?.spec?.id == clientId) return false;
+					if (value?.spec?.id == e.value.id) return false;
 					return true;
 				}
 			})
@@ -85,12 +90,11 @@ const cursorField = StateField.define<DecorationSet>({
 
 const cursorBaseTheme = EditorView.baseTheme({
 	".cm-tooltip.cm-tooltip-cursor": {
-		backgroundColor: "#66b",
 		color: "white",
 		border: "none",
 		padding: "2px 7px",
 		borderRadius: "4px",
-		position: "fixed",
+		position: "absolute",
 		marginTop: "-40px",
 		marginLeft: "-14px",
 		"& .cm-tooltip-arrow:before": {
@@ -98,17 +102,26 @@ const cursorBaseTheme = EditorView.baseTheme({
 		},
 		"& .cm-tooltip-arrow:after": {
 			borderTopColor: "transparent"
-		}
+		},
+		zIndex: "1000000"
 	},
 	".cm-tooltip-none": {
 		width: "0px",
 		height: "0px",
-		display: "inline-block"
+		display: "inline-block",
+	},
+	".cm-highlight-1": {
+		backgroundColor: "#6666BB55"
+	},
+	".cm-tooltip-1": {
+		backgroundColor: "#66b !important",
+		"& .cm-tooltip-arrow:before": {
+			borderTopColor: "#66b !important"
+		},
 	}
 })
 
-export function cursorExtension(id: string) {
+export function cursorExtension(id: string = "") {
 	clientId = id;
-	highlight.spec.id = clientId;
 	return [cursorField, cursorBaseTheme];
 }

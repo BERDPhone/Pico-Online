@@ -5,7 +5,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { langs } from '@uiw/codemirror-extensions-langs';
 import { EditorView, gutter, GutterMarker, ViewPlugin, ViewUpdate, Decoration, DecorationSet, Tooltip, showTooltip, WidgetType } from "@codemirror/view"
 import { StateField, StateEffect, RangeSet, EditorState, Text, ChangeSet, EditorSelection, Extension, StateEffectType, RangeSetBuilder } from "@codemirror/state"
-import { Update, receiveUpdates, sendableUpdates, collab, getSyncedVersion } from "@codemirror/collab"
+import { Update, receiveUpdates, sendableUpdates, collab, getSyncedVersion, getClientID } from "@codemirror/collab"
 import { basicSetup } from '@uiw/codemirror-extensions-basic-setup';
 import { createTheme } from '@uiw/codemirror-themes'
 import { tags as t } from '@lezer/highlight';
@@ -307,23 +307,22 @@ class CodeMirrorParent extends Component<props, state> {
 							langs.c(),
 							peerExtension(this.state.version),
 							EditorView.updateListener.of(update => {
+								if (update.transactions[0]?.effects[0]) console.log("update:", update);
 								update.transactions.forEach(e => { 
 									if (e.selection) {
 										let cursor: cursor = {
-											id: "abc",
+											id: getClientID(update.state),
 											from: e.selection.ranges[0].from,
 											to: e.selection.ranges[0].to
 										}
-										update.view.dispatch({
-											effects: removeCursor.of("lol")
-										})
+
 										update.view.dispatch({
 											effects: addCursor.of(cursor)
 										})
 									}
 								})
 							}),
-							cursorExtension("abc")
+							cursorExtension()
 						]}
 						value={this.state.doc}
 					/>
