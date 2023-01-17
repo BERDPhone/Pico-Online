@@ -315,12 +315,15 @@ class CodeMirrorParent extends Component<props, state> {
 											to: e.selection.ranges[0].to
 										}
 										update.view.dispatch({
+											effects: removeCursor.of("lol")
+										})
+										update.view.dispatch({
 											effects: addCursor.of(cursor)
 										})
 									}
 								})
 							}),
-							cursorExtension
+							cursorExtension("abc")
 						]}
 						value={this.state.doc}
 					/>

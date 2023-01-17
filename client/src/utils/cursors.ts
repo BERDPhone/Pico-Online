@@ -11,17 +11,23 @@ export interface Cursors {
 	cursors: cursor[]
 }
 
+let clientId = "-1";
+
 class TooltipWidget extends WidgetType {
 	constructor() { super() }
 
 	toDOM() {
-		let dom = document.createElement("div")
-		dom.className = "cm-tooltip"
+		let dom = document.createElement("div");
+		dom.className = "cm-tooltip-none";
 
 		let cursor_tooltip = document.createElement("div");
-		cursor_tooltip.className = "cm-tooltip-cursor"
+		cursor_tooltip.className = "cm-tooltip-cursor cm-tooltip cm-tooltip-above"
 		cursor_tooltip.textContent = "Jimmy"
 
+		let cursor_tooltip_arrow = document.createElement("div");
+		cursor_tooltip_arrow.className = "cm-tooltip-arrow"
+
+		cursor_tooltip.appendChild(cursor_tooltip_arrow);
 		dom.appendChild(cursor_tooltip);
 		return dom
 	}
@@ -29,7 +35,9 @@ class TooltipWidget extends WidgetType {
 	ignoreEvent() { return false }
 }
 
-const highlight = Decoration.mark({class: "cm-highlight"})
+const highlight = Decoration.mark({
+	class: "cm-highlight",
+})
 
 export const addCursor = StateEffect.define<cursor>();
 export const removeCursor = StateEffect.define<String>();
@@ -39,7 +47,7 @@ const cursorField = StateField.define<DecorationSet>({
 		return Decoration.none
 	},
 	update(cursors, tr) {
-		cursors = cursors.map(tr.changes)
+		let cursorTransacions = cursors.map(tr.changes)
 		for (let e of tr.effects) if (e.is(addCursor)) {
 			let addUpdates = [];
 
@@ -49,23 +57,27 @@ const cursorField = StateField.define<DecorationSet>({
 
 			addUpdates.push(
 				Decoration.widget({
-					widget: new TooltipWidget()
+					widget: new TooltipWidget(),
+					block: false,
+					side: -1,
+					id: clientId
 				}).range(e.value.to, e.value.to)
 			);
 
-			cursors = cursors.update({
+			cursorTransacions = cursorTransacions.update({
 				add: addUpdates
 			})
 		} else if (e.is(removeCursor)) {
-			cursors = cursors.update({
-				filter: (from, to, value) => {
+			cursorTransacions = cursorTransacions.update({
+				filter: (from, to, value ) => {
 					console.log(value)
+					if (value?.spec?.id == clientId) return false;
 					return true;
 				}
 			})
 		}
 
-		return cursors
+		return cursorTransacions
 	},
 	provide: f => EditorView.decorations.from(f)
 })
@@ -78,13 +90,25 @@ const cursorBaseTheme = EditorView.baseTheme({
 		border: "none",
 		padding: "2px 7px",
 		borderRadius: "4px",
+		position: "fixed",
+		marginTop: "-40px",
+		marginLeft: "-14px",
 		"& .cm-tooltip-arrow:before": {
 			borderTopColor: "#66b"
 		},
 		"& .cm-tooltip-arrow:after": {
 			borderTopColor: "transparent"
 		}
+	},
+	".cm-tooltip-none": {
+		width: "0px",
+		height: "0px",
+		display: "inline-block"
 	}
 })
 
-export const cursorExtension = [cursorField, cursorBaseTheme]
+export function cursorExtension(id: string) {
+	clientId = id;
+	highlight.spec.id = clientId;
+	return [cursorField, cursorBaseTheme];
+}
