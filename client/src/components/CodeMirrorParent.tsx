@@ -114,11 +114,11 @@ class CodeMirrorParent extends Component<props, state> {
 				let effects: StateEffect<any>[] = [];
 
 				u.effects.forEach((effect: StateEffect<any>) => {
-					if (u.effects?.id) {
+					if (effect.value?.id) {
 						let cursor: cursor = {
-							id: u.effects.id,
-							from: u.effects.from,
-							to: u.effects.to
+							id: effect.value.id,
+							from: effect.value.from,
+							to: effect.value.to
 						}
 
 						effects.push(addCursor.of(cursor))
@@ -128,7 +128,7 @@ class CodeMirrorParent extends Component<props, state> {
 				return {
 					changes: ChangeSet.fromJSON(u.changes),
 					clientID: u.clientID,
-					effects: effects
+					effects
 				}
 			}
 			

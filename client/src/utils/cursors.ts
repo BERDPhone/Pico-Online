@@ -1,6 +1,5 @@
 import { EditorView, ViewPlugin, Decoration, DecorationSet, WidgetType } from "@codemirror/view"
 import { StateField, StateEffect } from "@codemirror/state"
-import { getClientID } from "@codemirror/collab"
 
 export interface cursor {
 	id: string,
@@ -12,15 +11,13 @@ export interface Cursors {
 	cursors: cursor[]
 }
 
-let clientId = "";
-
 class TooltipWidget extends WidgetType {
 	private name: string = "John";
-	private suffix: string = "1";
+	private suffix: string = "";
 
-	constructor(name: string, suffix: string) {
+	constructor(name: string, color: number) {
 		super();
-		this.suffix = suffix;
+		this.suffix = `${color % 8 + 1}`;
 		this.name = name;
 	}
 
@@ -46,6 +43,8 @@ class TooltipWidget extends WidgetType {
 export const addCursor = StateEffect.define<cursor>();
 export const removeCursor = StateEffect.define<String>();
 
+let cursorsItems = new Map<string, number>();
+
 const cursorField = StateField.define<DecorationSet>({
 	create() {
 		return Decoration.none
@@ -54,21 +53,19 @@ const cursorField = StateField.define<DecorationSet>({
 		let cursorTransacions = cursors.map(tr.changes)
 		for (let e of tr.effects) if (e.is(addCursor)) {
 			let addUpdates = [];
-
-			if (!clientId) clientId = getClientID(tr.startState)
+			cursorsItems.set(e.value.id, cursorsItems.size);
 
 			if (e.value.from != e.value.to) {
 				addUpdates.push(Decoration.mark({
-					class: "cm-highlight-1",
+					class: `cm-highlight-${cursorsItems.get(e.value.id)! % 8 + 1}`,
 					id: e.value.id
 				}).range(e.value.from, e.value.to));
 			}
 
 			addUpdates.push(
 				Decoration.widget({
-					widget: new TooltipWidget(clientId, "1"),
+					widget: new TooltipWidget(e.value.id, cursorsItems.get(e.value.id)!),
 					block: false,
-					side: -1,
 					id: e.value.id
 				}).range(e.value.to, e.value.to)
 			);
@@ -97,9 +94,6 @@ const cursorBaseTheme = EditorView.baseTheme({
 		position: "absolute",
 		marginTop: "-40px",
 		marginLeft: "-14px",
-		"& .cm-tooltip-arrow:before": {
-			borderTopColor: "#66b"
-		},
 		"& .cm-tooltip-arrow:after": {
 			borderTopColor: "transparent"
 		},
@@ -113,15 +107,78 @@ const cursorBaseTheme = EditorView.baseTheme({
 	".cm-highlight-1": {
 		backgroundColor: "#6666BB55"
 	},
+	".cm-highlight-2": {
+		backgroundColor: "#F76E6E55"
+	},
+	".cm-highlight-3": {
+		backgroundColor: "#0CDA6255"
+	},
+	".cm-highlight-4": {
+		backgroundColor: "#0CC5DA55"
+	},
+	".cm-highlight-5": {
+		backgroundColor: "#0C51DA55"
+	},
+	".cm-highlight-6": {
+		backgroundColor: "#980CDA55"
+	},
+	".cm-highlight-7": {
+		backgroundColor: "#DA0CBB55"
+	},
+	".cm-highlight-8": {
+		backgroundColor: "#DA800C55"
+	},
 	".cm-tooltip-1": {
 		backgroundColor: "#66b !important",
 		"& .cm-tooltip-arrow:before": {
 			borderTopColor: "#66b !important"
 		},
-	}
+	},
+	".cm-tooltip-2": {
+		backgroundColor: "#F76E6E !important",
+		"& .cm-tooltip-arrow:before": {
+			borderTopColor: "#F76E6E !important"
+		},
+	},
+	".cm-tooltip-3": {
+		backgroundColor: "#0CDA62 !important",
+		"& .cm-tooltip-arrow:before": {
+			borderTopColor: "#0CDA62 !important"
+		},
+	},
+	".cm-tooltip-4": {
+		backgroundColor: "#0CC5DA !important",
+		"& .cm-tooltip-arrow:before": {
+			borderTopColor: "#0CC5DA !important"
+		},
+	},
+	".cm-tooltip-5": {
+		backgroundColor: "#0C51DA !important",
+		"& .cm-tooltip-arrow:before": {
+			borderTopColor: "#0C51DA !important"
+		},
+	},
+	".cm-tooltip-6": {
+		backgroundColor: "#980CDA !important",
+		"& .cm-tooltip-arrow:before": {
+			borderTopColor: "#980CDA !important"
+		},
+	},
+	".cm-tooltip-7": {
+		backgroundColor: "#DA0CBB !important",
+		"& .cm-tooltip-arrow:before": {
+			borderTopColor: "#DA0CBB !important"
+		},
+	},
+	".cm-tooltip-8": {
+		backgroundColor: "#DA800C !important",
+		"& .cm-tooltip-arrow:before": {
+			borderTopColor: "#DA800C !important"
+		},
+	},
+
 })
 
 export function cursorExtension(id: string = "") {
-	clientId = id;
 	return [cursorField, cursorBaseTheme];
 }
