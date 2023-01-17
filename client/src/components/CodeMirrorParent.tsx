@@ -3,14 +3,16 @@ import { Socket } from "socket.io-client";
 
 import CodeMirror from '@uiw/react-codemirror';
 import { langs } from '@uiw/codemirror-extensions-langs';
-import { EditorView, gutter, GutterMarker, ViewPlugin, ViewUpdate, Decoration, DecorationSet, Tooltip, showTooltip } from "@codemirror/view"
-import { StateField, StateEffect, RangeSet, EditorState, Text, ChangeSet, EditorSelection, Extension, StateEffectType } from "@codemirror/state"
+import { EditorView, gutter, GutterMarker, ViewPlugin, ViewUpdate, Decoration, DecorationSet, Tooltip, showTooltip, WidgetType } from "@codemirror/view"
+import { StateField, StateEffect, RangeSet, EditorState, Text, ChangeSet, EditorSelection, Extension, StateEffectType, RangeSetBuilder } from "@codemirror/state"
 import { Update, receiveUpdates, sendableUpdates, collab, getSyncedVersion } from "@codemirror/collab"
 import { basicSetup } from '@uiw/codemirror-extensions-basic-setup';
 import { createTheme } from '@uiw/codemirror-themes'
 import { tags as t } from '@lezer/highlight';
 import { indentUnit } from '@codemirror/language'
 import { markdown } from "@codemirror/lang-markdown";
+
+import { cursor, Cursors, addCursor, removeCursor, cursorExtension } from "../utils/cursors";
 
 type props = {
 	socket: Socket
@@ -21,17 +23,7 @@ type state = {
 	version: number | null,
 	doc: String | null,
 	fileContents: string,
-	cursors: Map<string, selection>
-}
-
-interface selection {
-	from: number,
-	to: number
-}
-
-interface Cursor {
-	from: number,
-	to: number
+	cursors: cursor[]
 }
 
 let fileExplorerKey = 0;
@@ -43,7 +35,7 @@ class CodeMirrorParent extends Component<props, state> {
 		connected: false,
 		version: null,
 		doc: null,
-		cursors: new Map()
+		cursors: []
 	}
 
 	increaseFileExplorerKey = () => {
@@ -74,14 +66,6 @@ class CodeMirrorParent extends Component<props, state> {
 			this.setState({ 
 				connected: false
 			});
-		});
-
-		this.props.socket.on('cursorUpdate', (cursors, version) => {
-			if (version == this.state.version) {
-				this.setState({
-					cursors: new Map(Object.entries(cursors))
-				});
-			}
 		});
 	}
 
@@ -126,8 +110,20 @@ class CodeMirrorParent extends Component<props, state> {
 				resolve(JSON.parse(updates));
 			});
 		}).then((updates: any) => updates.map((u: any) => {
-			if (u.effects[0]?.value?.from) {
-				let effects = this.markRegion.of({from: u.effects[0]?.value.from, to: u.effects[0]?.value.to})
+			if (u.effects[0]) {
+				let effects: StateEffect<any>[] = [];
+
+				u.effects.forEach((effect: StateEffect<any>) => {
+					if (u.effects?.id) {
+						let cursor: cursor = {
+							id: u.effects.id,
+							from: u.effects.from,
+							to: u.effects.to
+						}
+
+						effects.push(addCursor.of(cursor))
+					}
+				})
 
 				return {
 					changes: ChangeSet.fromJSON(u.changes),
@@ -157,14 +153,6 @@ class CodeMirrorParent extends Component<props, state> {
 			});
 		});
 	}
-
-	markRegion = StateEffect.define<Cursor>({
-		map({from, to}, changes) {
-			from = changes.mapPos(from, 1)
-			to = changes.mapPos(to, -1)
-			return from < to ? {from, to} : undefined
-		}
-	})
 
 	render() {
 		let self = this;
@@ -210,7 +198,7 @@ class CodeMirrorParent extends Component<props, state> {
 					startVersion,
 					sharedEffects: tr => {
 						const effects = tr.effects.filter(e => {
-							return e.is(this.markRegion)
+							return e.is(addCursor)
 						})
 
 						return effects;
@@ -219,61 +207,6 @@ class CodeMirrorParent extends Component<props, state> {
 				plugin
 			]
 		}
-
-		const getCursorTooltips = (effects: readonly StateEffect<any>[]): Tooltip[] => {
-			let tooltips: Tooltip[] = [];
-
-			effects.forEach((effect) => {
-				if (!effect.is(this.markRegion)) return;
-
-				tooltips.push(
-					{
-						pos: effect.value.to,
-						above: true,
-						strictSide: true,
-						arrow: true,
-						create: () => {
-							let dom = document.createElement("div")
-							dom.className = "cm-tooltip-cursor"
-							dom.textContent = "Jimmy"
-							return {dom}
-						}
-					}
-				)
-			})
-
-			tooltips.push()
-
-			return tooltips
-		}
-
-		const cursorTooltipField = StateField.define<Tooltip[]>({
-			create: () => ([]),
-
-			update(tooltips, tr) {
-				const containsEffects = tr.effects?.length;
-				if (!(tr.docChanged || tr.selection || containsEffects)) return tooltips;
-				return getCursorTooltips(tr.effects)
-			},
-
-			provide: f => showTooltip.computeN([f], state => state.field(f))
-		})
-
-		const cursorTooltipBaseTheme = EditorView.baseTheme({
-			".cm-tooltip.cm-tooltip-cursor": {
-				backgroundColor: "#66b",
-				color: "white",
-				border: "none",
-				padding: "2px 7px",
-				borderRadius: "4px",
-				"& .cm-tooltip-arrow:before": {
-					borderTopColor: "#66b"
-				},
-				"& .cm-tooltip-arrow:after": {
-					borderTopColor: "transparent"
-				}
-			}
-		})
 
 		const breakpointEffect = StateEffect.define<{pos: number, on: boolean}>({
 			map: (val, mapping) => ({pos: mapping.mapPos(val.pos), on: val.on})
@@ -374,16 +307,20 @@ class CodeMirrorParent extends Component<props, state> {
 							langs.c(),
 							peerExtension(this.state.version),
 							EditorView.updateListener.of(update => {
-								console.log("update:", update);
 								update.transactions.forEach(e => { 
 									if (e.selection) {
+										let cursor: cursor = {
+											id: "abc",
+											from: e.selection.ranges[0].from,
+											to: e.selection.ranges[0].to
+										}
 										update.view.dispatch({
-											effects: this.markRegion.of({from: e.selection.ranges[0].from, to: e.selection.ranges[0].to})
+											effects: addCursor.of(cursor)
 										})
 									}
 								})
 							}),
-							[cursorTooltipField, cursorTooltipBaseTheme]
+							cursorExtension
 						]}
 						value={this.state.doc}
 					/>
