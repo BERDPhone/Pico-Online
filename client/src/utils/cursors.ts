@@ -1,4 +1,4 @@
-import { EditorView, ViewPlugin, Decoration, DecorationSet, WidgetType } from "@codemirror/view"
+import { EditorView, Decoration, DecorationSet, WidgetType } from "@codemirror/view"
 import { StateField, StateEffect } from "@codemirror/state"
 
 export interface cursor {
@@ -55,7 +55,7 @@ const cursorField = StateField.define<DecorationSet>({
 			let addUpdates = [];
 			if (!cursorsItems.has(e.value.id)) cursorsItems.set(e.value.id, cursorsItems.size);
 
-			if (e.value.from != e.value.to) {
+			if (e.value.from !== e.value.to) {
 				addUpdates.push(Decoration.mark({
 					class: `cm-highlight-${cursorsItems.get(e.value.id)! % 8 + 1}`,
 					id: e.value.id
@@ -73,7 +73,7 @@ const cursorField = StateField.define<DecorationSet>({
 			cursorTransacions = cursorTransacions.update({
 				add: addUpdates,
 				filter: (from, to, value ) => {
-					if (value?.spec?.id == e.value.id) return false;
+					if (value?.spec?.id === e.value.id) return false;
 					return true;
 				}
 			})
@@ -180,5 +180,23 @@ const cursorBaseTheme = EditorView.baseTheme({
 })
 
 export function cursorExtension(id: string = "") {
-	return [cursorField, cursorBaseTheme];
+	return [
+		cursorField,
+		cursorBaseTheme,
+		EditorView.updateListener.of(update => {
+			update.transactions.forEach(e => { 
+				if (e.selection) {
+					let cursor: cursor = {
+						id,
+						from: e.selection.ranges[0].from,
+						to: e.selection.ranges[0].to
+					}
+
+					update.view.dispatch({
+						effects: addCursor.of(cursor)
+					})
+				}
+			})
+		}),
+	];
 }
