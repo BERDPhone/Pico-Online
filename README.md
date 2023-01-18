@@ -36,3 +36,8 @@ Your web interface to the pico is nearly done. Now just the wiring from the Pico
 The diagram below shows how to wire it.
 
 ![This is the wiring diagram](resources/images/conection.png?raw=true)
+
+
+Here is what the interface looks like
+
+![This is the interface](resources/images/interface.png?raw=true)
