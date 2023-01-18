@@ -37,6 +37,12 @@ class Navbar extends Component<props, state> {
 			this.props.terminal.current.processCommand();
 		}
 
+		const saveCode = () => {
+			this.props.terminal.current.clearInput();
+			this.props.terminal.current.terminalInput.current.value = "save";
+			this.props.terminal.current.processCommand();
+		}
+
 		return (
 			<>
 				<nav className="relative flex flex-wrap items-center justify-between px-2 py-3 bg-slate-900">
@@ -104,6 +110,17 @@ class Navbar extends Component<props, state> {
 											loading={ this.state.codeBuilding }
 										>
 											Build
+										</LoadButton>
+									</div>
+								</li>
+								<li className="nav-item">
+									<div className="px-3 py-2 flex items-center text-xs uppercase font-bold leading-snug text-white hover:opacity-75">
+										<LoadButton 
+											className="ml-2 bg-cyan-300 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded uppercase"
+											onClick={() => saveCode()}
+											loading={ false }
+										>
+											Save
 										</LoadButton>
 									</div>
 								</li>

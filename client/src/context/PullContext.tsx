@@ -1,4 +1,4 @@
-import React, { createContext, useState } from 'react';
+import { createContext, useState } from 'react';
 
 const PullContext = createContext<boolean>(false);
 const PullDispatchContext = createContext<Function>(() => { return false; });

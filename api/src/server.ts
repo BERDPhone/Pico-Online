@@ -1,9 +1,11 @@
 import { Server, Socket } from 'socket.io';
-import { simpleGit, SimpleGit, CleanOptions } from 'simple-git';
+import { simpleGit } from 'simple-git';
 import * as fs from 'fs';
 import { spawn } from 'child_process';
 import * as http from 'http';
-import { SerialPort, SpacePacketParser, ReadlineParser } from 'serialport';
+import { SerialPort, ReadlineParser } from 'serialport';
+import { ChangeSet, Text } from "@codemirror/state"
+import { Update } from "@codemirror/collab"
 
 const path = require('path');
 const config = require('../../config.json')
@@ -13,6 +15,12 @@ const gitDir: string = `${process.cwd()}/gitrepo`;
 console.log("gitDir:", gitDir);
 
 const server = http.createServer();
+
+interface document {
+	updates: Update[],
+	doc: Text,
+	pending: ((value: any) => void)[],
+}
 
 let io = new Server(server, {
 	path: "/api",
@@ -35,16 +43,87 @@ serialport.on('error', (error) => {
 	console.error(error);
 })
 
+let documents = new Map<string, document>();
+documents.set('', {
+	updates: [],
+	pending: [],
+	doc: Text.of(['Starting doc!'])
+})
+
+function getFile(file: string) {
+	if (documents.has(file)) return documents.get(file);
+
+	const buffer = fs.readFileSync(`${gitDir}/${config.gitBaseDir}/${file}`);
+	const fileContent = buffer.toString();
+
+	const documentContent: document = {
+		updates: [],
+		pending: [],
+		doc: Text.of([fileContent])
+	};
+
+	documents.set(file, documentContent);
+
+	return documentContent;
+}
+
 // listening for connections from clients
 io.on('connection', (socket: Socket) =>{
-	console.log("getting connection");
 
-	// socket.on('changeRemote', (params, callback) => {
-	// 	config.gitRepository = params;
-	// 	socket.emit('pull')
-	// })
+	socket.on('pullUpdates', (file, version: number) => {
+		try {
+			const { updates, pending, doc } = getFile(file);
 
-	socket.on('getStructure', (params, callback) => {
+			if (version < updates.length) {
+				socket.emit("pullUpdateResponse", JSON.stringify(updates.slice(version)))
+			} else {
+				pending.push((updates) => { socket.emit('pullUpdateResponse', JSON.stringify(updates.slice(version))) });
+				documents.set(file, {updates, pending, doc})
+			}
+		} catch (error) {
+			console.error('pullUpdates', error);
+			socket.emit('stdout', `'${file}' does not exist!`);
+		}
+	})
+
+	socket.on('pushUpdates', (file, version, docUpdates) => {
+		try {
+			let { updates, pending, doc } = getFile(file);
+			docUpdates = JSON.parse(docUpdates);
+
+			if (version != updates.length) {
+				socket.emit('pushUpdateResponse', false);
+			} else {
+				for (let update of docUpdates) {
+					// Convert the JSON representation to an actual ChangeSet
+					// instance
+					let changes = ChangeSet.fromJSON(update.changes)
+					updates.push({ changes, clientID: update.clientID, effects: update.effects })
+					documents.set(file, {updates, pending, doc})
+					doc = changes.apply(doc)
+				}
+				socket.emit('pushUpdateResponse', true);
+
+				while (pending.length) pending.pop()!(updates)
+				documents.set(file, {updates, pending, doc})
+			}
+		} catch (error) {
+			socket.emit('stdout', `'${file}' does not exist!`);
+			console.error('pushUpdates', error)
+		}
+	})
+
+	socket.on('getDocument', (file) => {
+		try {
+			let { updates, doc } = getFile(file);
+			socket.emit('getDocumentResponse', updates.length, doc.toString());
+		} catch (error) {
+			socket.emit('stdout', `'${file}' does not exist!`);
+			console.error('getDocument', error);
+		}
+	})
+
+	socket.on('getStructure', () => {
 		// socket.emit('stdout', `Updating file structure`);
 		let diretoryTreeToObj = function(dir: string, done: Function) {
 			let results: File[] = [];
@@ -149,7 +228,7 @@ io.on('connection', (socket: Socket) =>{
 
 	})
 
-	socket.on('getBranch', (params, callback) => {
+	socket.on('getBranch', () => {
 		simpleGit(`${gitDir}/${config.gitBaseDir}`)
 			.branch()
 			.then((branches) => {
@@ -165,7 +244,7 @@ io.on('connection', (socket: Socket) =>{
 			})
 	})
 
-	socket.on('clear', (params, callback) => {
+	socket.on('clear', () => {
 
 		// send data back to client by using emit
 		socket.emit('clear');
@@ -174,11 +253,10 @@ io.on('connection', (socket: Socket) =>{
 		socket.broadcast.emit('clear');
 	})
 
-	socket.on('pull', (params, callback) => {
-		console.log("getting pull")
-
+	socket.on('pull', (params) => {
 		// // broadcasting data to all other connected clients
-		socket.broadcast.emit('pull', params);
+		params ??= ''
+		socket.broadcast.emit('command', `pull ${params}`);
 
 		try {
 
@@ -227,36 +305,31 @@ io.on('connection', (socket: Socket) =>{
 		}
 	})
 
-	socket.on('branch', (params, callback) => {
-		console.log("getting pull")
-
+	socket.on('branch', (branchName) => {
 		// broadcasting data to all other connected clients
-		socket.broadcast.emit('branch', params);
+		socket.broadcast.emit('branch', branchName);
 
-		console.log(`${gitDir}/${config.gitBaseDir}`);
-
-		if (params) {
+		if (branchName) {
 			// socket.emit('stdout', params);
 			simpleGit(`${gitDir}/${config.gitBaseDir}`)
-				.checkout(`remotes/origin/${params}`)
+				.checkout(`remotes/origin/${branchName}`)
 				.submoduleInit()
 				.submoduleUpdate()
 				.then(() => {
-					socket.emit('stdout', `Successfully changed branch to ${params}`);
-					socket.broadcast.emit('stdout', `Successfully changed branch to ${params}`);
-					socket.emit('displayBranch', params)
-					socket.broadcast.emit('displayBranch', params);
+					socket.emit('stdout', `Successfully changed branch to ${branchName}`);
+					socket.broadcast.emit('stdout', `Successfully changed branch to ${branchName}`);
+					socket.emit('displayBranch', branchName)
+					socket.broadcast.emit('displayBranch', branchName);
 				})
 				.catch((err) => {
-					socket.emit('stdout', `Error attempting to change to ${params} branch`);
-					socket.broadcast.emit('stdout', `Error attempting to change to ${params} branch`);
+					socket.emit('stdout', `Error attempting to change to ${branchName} branch`);
+					socket.broadcast.emit('stdout', `Error attempting to change to ${branchName} branch`);
 				});
 		} else {
 			simpleGit(`${gitDir}/${config.gitBaseDir}`)
 				.branch()
 				.then((branches) => {
 					// remotes/origin/
-					// console.log("branches: ", branches.all)
 					let allBranches: string[] = [];
 					branches.all.forEach(branch => {
 						if (branch.includes("remotes/origin/")) {
@@ -281,7 +354,6 @@ io.on('connection', (socket: Socket) =>{
 			.branch()
 			.then((branches) => {
 				// remotes/origin/
-				// console.log("branches: ", branches.all)
 				let allBranches: string[] = [];
 				branches.all.forEach(branch => {
 					if (branch.includes("remotes/origin/")) {
@@ -299,11 +371,11 @@ io.on('connection', (socket: Socket) =>{
 			});
 	}
 
-	socket.on('listBranches', (params, callback) => {
+	socket.on('listBranches', () => {
 		listBranches();
 	});
 
-	socket.on('build', (params, callback) => {
+	socket.on('build', () => {
 		let programPath: string;
 		if (config.buildTargetPath != "") {
 			programPath = `${config.buildTargetPath}/${config.buildTarget}.elf`;
@@ -336,24 +408,11 @@ io.on('connection', (socket: Socket) =>{
 	
 	})
 
-	socket.on('edit', (params, callback) => {
-		try {
-			const buffer = fs.readFileSync(`${gitDir}/${config.gitBaseDir}/${params}`);
-			const fileContent = buffer.toString();
-
-			socket.emit('stdout', `Displaying file in editor`);
-
-			socket.emit('fileContents', fileContent)
-		} catch (error) {
-			if (params) {
-				socket.emit('stdout', 'Incorrect file path provided');
-			} else {
-				socket.emit('stdout', 'No file path provided');
-			}
-		}	
+	socket.on('edit', (filename) => {
+		socket.emit('display', filename);
 	})
 
-	socket.on('changeTarget', (params, callback) => {
+	socket.on('changeTarget', (params) => {
 		params[0] = params[0] ?? "";
 		params[1] = params[1] ?? "";
 		config.buildTarget = params[0];
@@ -365,6 +424,19 @@ io.on('connection', (socket: Socket) =>{
 		socket.broadcast.emit('stdout', `Set executable to "${params[0]}" and path to "${params[1]}"`);
 
 	});
+
+	socket.on('save', () => {
+		documents.forEach((doc, file) => {
+			socket.broadcast.emit('command', `save`);
+
+			if (file) fs.writeFile(`${gitDir}/${config.gitBaseDir}/${file}`, doc.doc.toString(), (err) => {
+				console.error(err);
+
+				socket.emit('stdout', `Finished saving ${file}`);
+				socket.broadcast.emit('stdout', `Finished saving ${file}`);
+			});
+		})
+	})
 })
 
 

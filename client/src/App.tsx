@@ -54,8 +54,7 @@ class App extends Component<props, state> {
 			this.terminal.current.scrollToBottom();
 		})
 
-		socket.on("pull", (gitUrl) => {
-			const commandName = `pull ${gitUrl}`
+		socket.on("command", (commandName) => {
 			this.terminal.current.pushToHistory(commandName)
 			this.terminal.current.pushToStdout(constructEcho(this.terminal.current.props.promptLabel || '$', commandName, this.terminal.current.props), { isEcho: true })
 			this.terminal.current.scrollToBottom();
@@ -94,7 +93,7 @@ class App extends Component<props, state> {
 		socket.off('connect');
 		socket.off('disconnect');
 		socket.off('clear');
-		socket.off('pull');
+		socket.off('command');
 		socket.off('stdout');
 		socket.off('branch');
 		socket.off('displayBranch');
@@ -139,10 +138,15 @@ class App extends Component<props, state> {
 		target: {
 			description: `Changes the build target. Usage: 'target executable_name path_to_executable'`,
 			fn: (arg: string, arg2: string) => {
-				console.log(arg, arg2);
 				socket.emit("changeTarget", [arg, arg2]);
 			}
 		},
+		save: {
+			description: 'Saves all files on the server. Remember to save before building!',
+			fn: () => {
+				socket.emit("save")
+			}
+		}
 
 	}
 
