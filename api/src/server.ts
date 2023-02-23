@@ -358,7 +358,6 @@ io.on('connection', (socket: Socket) =>{
 		simpleGit(`${gitDir}/${config.gitBaseDir}`)
 			.branch()
 			.then((branches) => {
-				documents.clear();
 				// remotes/origin/
 				let allBranches: string[] = [];
 				branches.all.forEach(branch => {
