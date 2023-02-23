@@ -232,7 +232,6 @@ io.on('connection', (socket: Socket) =>{
 		simpleGit(`${gitDir}/${config.gitBaseDir}`)
 			.branch()
 			.then((branches) => {
-				documents.clear();
 				if (branches.current.includes("origin/")) {
 					let currentBranch = branches.current.replace("origin/", "");
 					socket.emit("displayBranch", currentBranch);
