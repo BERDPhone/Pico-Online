@@ -232,6 +232,7 @@ io.on('connection', (socket: Socket) =>{
 		simpleGit(`${gitDir}/${config.gitBaseDir}`)
 			.branch()
 			.then((branches) => {
+				documents.clear();
 				if (branches.current.includes("origin/")) {
 					let currentBranch = branches.current.replace("origin/", "");
 					socket.emit("displayBranch", currentBranch);
@@ -286,6 +287,8 @@ io.on('connection', (socket: Socket) =>{
 					let repo = fs.readdirSync(gitDir);
 					config.gitBaseDir = repo[0];
 
+					documents.clear();
+
 					socket.emit('stdout', "Successfully pulled " + config.gitBaseDir + " from github");
 					socket.broadcast.emit('stdout', "Successfully pulled " + config.gitBaseDir + " from github");
 
@@ -316,6 +319,7 @@ io.on('connection', (socket: Socket) =>{
 				.submoduleInit()
 				.submoduleUpdate()
 				.then(() => {
+					documents.clear();
 					socket.emit('stdout', `Successfully changed branch to ${branchName}`);
 					socket.broadcast.emit('stdout', `Successfully changed branch to ${branchName}`);
 					socket.emit('displayBranch', branchName)
@@ -329,6 +333,7 @@ io.on('connection', (socket: Socket) =>{
 			simpleGit(`${gitDir}/${config.gitBaseDir}`)
 				.branch()
 				.then((branches) => {
+					documents.clear();
 					// remotes/origin/
 					let allBranches: string[] = [];
 					branches.all.forEach(branch => {
@@ -353,6 +358,7 @@ io.on('connection', (socket: Socket) =>{
 		simpleGit(`${gitDir}/${config.gitBaseDir}`)
 			.branch()
 			.then((branches) => {
+				documents.clear();
 				// remotes/origin/
 				let allBranches: string[] = [];
 				branches.all.forEach(branch => {
